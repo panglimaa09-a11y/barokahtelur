@@ -296,6 +296,7 @@ body.admin-entry-locked{overflow:hidden}
 <script id="barokah-v70-supabase-loader" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="supabase-client.js"></script>
+<style id="barokah-ui-cleanup-css">.print-demo-watermark,.pr-demo-label{display:none!important}@media print{.print-demo-watermark{display:block!important}.pr-demo-label{display:block!important}}</style>
 </head>
 <body>
 <div id="adminEntryGate">
@@ -1278,6 +1279,7 @@ setInterval(updateLiveDateTime,1000);</script>
         '</main>'+
         '<script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},250);});<\/script>'+
         '<script src="stock-cloud-fix.js"></script>
+<script src="ui-bugfix.js"></script>
 </body></html>';
 
       // Do NOT use window.open/about:blank. Print through an isolated iframe
