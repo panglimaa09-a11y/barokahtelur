@@ -1,11 +1,11 @@
 // Barokah Telur V70 - Supabase client
 (function(){
-  function loadMultiAccount(){
-    if(document.querySelector('script[data-barokah-multi-account]'))return;
+  function loadScript(src, marker){
+    if(document.querySelector('script[data-barokah-script="'+marker+'"]'))return;
     const s=document.createElement('script');
-    s.src='multi-account.js';
+    s.src=src;
     s.async=false;
-    s.dataset.barokahMultiAccount='1';
+    s.dataset.barokahScript=marker;
     document.head.appendChild(s);
   }
   function init(){
@@ -16,7 +16,8 @@
     window.barokahSupabase=window.supabase.createClient(c.url,c.anonKey);
     window.barokahSupabaseReady=true;
     window.dispatchEvent(new CustomEvent("barokah:supabase-ready"));
-    loadMultiAccount();
+    loadScript('multi-account.js','multi-account');
+    loadScript('shared-data.js','shared-data');
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init); else init();
 })();
