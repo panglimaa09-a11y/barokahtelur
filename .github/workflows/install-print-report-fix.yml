@@ -14,22 +14,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject print report fix
+      - name: Repair and install print report fix
         shell: python
         run: |
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
           tag = '<script src="print-report-fix.js"></script>'
-          if tag not in s:
-              marker = '</body>'
-              if marker not in s:
-                  raise SystemExit('index.html tidak memiliki </body>')
-              s = s.replace(marker, tag + '\n' + marker, 1)
-              p.write_text(s, encoding='utf-8')
-              print('Print report fix injected.')
-          else:
-              print('Print report fix already installed.')
+
+          # Remove any previous accidental insertion, including one that may
+          # have landed inside a generated print HTML string.
+          s = s.replace(tag, '')
+
+          marker = '</body>'
+          pos = s.rfind(marker)
+          if pos < 0:
+              raise SystemExit('index.html tidak memiliki </body>')
+
+          s = s[:pos] + tag + '\n' + s[pos:]
+          p.write_text(s, encoding='utf-8')
+          print('Print report fix installed immediately before the final </body>.')
 
       - name: Commit generated change
         run: |
@@ -39,6 +43,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "fix: restore production print report"
+            git commit -m "fix: place print report fix safely"
             git push
           fi
