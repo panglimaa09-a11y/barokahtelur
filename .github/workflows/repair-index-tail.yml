@@ -20,14 +20,14 @@ jobs:
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          end = s.find('</body></html>')
+          end = s.rfind('</body></html>')
           if end < 0:
               raise SystemExit('Penutup </body></html> tidak ditemukan.')
           clean = s[:end] + '</body></html>'
           # Ensure runtime fixes are actual HTML script tags, not text inside a JS string.
           clean = clean.replace('</body></html>', '<script src="stock-cloud-fix.js"></script><script src="ui-bugfix.js"></script></body></html>', 1)
           p.write_text(clean, encoding='utf-8')
-          print('index.html repaired; leaked content after </body></html> removed.')
+          print('index.html repaired; leaked content after the final </body></html> removed.')
 
       - name: Commit repair
         run: |
