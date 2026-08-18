@@ -1,10 +1,8 @@
 (function(){
   'use strict';
 
-  function esc(v){return String(v==null?'':v);}
   function toastSafe(m){if(typeof toast==='function')toast(m);else alert(m);}
   function getSB(){return window.barokahSupabase;}
-  function validUuid(v){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v||''));}
   function makeId(){return crypto.randomUUID?crypto.randomUUID():null;}
 
   async function restoreToCloud(incoming){
@@ -16,15 +14,15 @@
     if(!Array.isArray(incoming))throw new Error('Format backup tidak valid.');
 
     const rows=incoming.map(function(x){
-      const id=validUuid(x.id)?x.id:makeId();
+      const id=makeId();
       if(!id)throw new Error('Browser tidak mendukung pembuatan ID transaksi.');
       const created=Number(x.createdAt);
       return {
         id:id,
         user_id:user.id,
-        note:esc(x.note),
+        note:String(x.note==null?'':x.note),
         price:Number(x.price||0),
-        unit:esc(x.unit),
+        unit:String(x.unit==null?'':x.unit),
         qty:Number(x.qty||0),
         total:Number(x.total||0),
         type:x.type==='expense'?'expense':'income',
@@ -33,32 +31,30 @@
       };
     });
 
-    // Insert the restored dataset first. Existing cloud data is only removed
-    // after every backup row has been accepted by Supabase.
+    // Restore is transactional at application level: insert the complete
+    // backup first. Existing cloud rows are deleted only after every chunk
+    // has been accepted by Supabase.
     const inserted=[];
-    const chunkSize=100;
-    for(let i=0;i<rows.length;i+=chunkSize){
-      const chunk=rows.slice(i,i+chunkSize);
-      const {data,error}=await sb.from('transactions').insert(chunk).select('*');
+    for(let i=0;i<rows.length;i+=100){
+      const {data,error}=await sb.from('transactions').insert(rows.slice(i,i+100)).select('*');
       if(error)throw error;
       inserted.push.apply(inserted,data||[]);
     }
 
-    const old={data:[],error:null};
     const current=await sb.from('transactions').select('id').eq('user_id',user.id);
     if(current.error)throw current.error;
     const keep=new Set(inserted.map(r=>String(r.id)));
     const oldIds=(current.data||[]).map(r=>String(r.id)).filter(id=>!keep.has(id));
     for(let i=0;i<oldIds.length;i+=100){
-      const ids=oldIds.slice(i,i+100);
-      const {error}=await sb.from('transactions').delete().in('id',ids).eq('user_id',user.id);
+      const {error}=await sb.from('transactions').delete().in('id',oldIds.slice(i,i+100)).eq('user_id',user.id);
       if(error)throw error;
     }
 
-    const normalized=inserted.map(function(r){return {id:r.id,note:r.note,price:Number(r.price),unit:r.unit,qty:Number(r.qty),total:Number(r.total),type:r.type,date:r.transaction_date,createdAt:new Date(r.created_at).getTime()};});
-    window.state=normalized;
-    try{localStorage.setItem('barokah_telur_owner_final_v1',JSON.stringify(normalized));}catch(e){}
-    if(typeof render==='function')render();
+    try{localStorage.setItem('barokah_telur_owner_final_v1',JSON.stringify(inserted.map(function(r){return {id:r.id,note:r.note,price:Number(r.price),unit:r.unit,qty:Number(r.qty),total:Number(r.total),type:r.type,date:r.transaction_date,createdAt:new Date(r.created_at).getTime()};})));}catch(e){}
+    // Reload from the same Supabase source used by production so the app's
+    // lexical state is updated correctly.
+    if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
+    else if(typeof render==='function')render();
     toastSafe('Backup berhasil dipulihkan dan disimpan ke Supabase.');
   }
 
