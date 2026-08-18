@@ -41,3 +41,5 @@ jobs:
             git commit -m "feat: enable multi-account manager"
             git push
           fi
+
+      # Preview-only branch; main/production is intentionally untouched.
