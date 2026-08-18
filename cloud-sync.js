@@ -51,14 +51,37 @@
   window.addStockIn=()=>addMovement('Masuk');window.addStockOut=()=>addMovement('Keluar');window.addBadEggs=()=>addMovement('Retak');window.addUnfitEggs=()=>addMovement('Tidak Layak');
   window.clearStockHistory=async function(){const sb=requireClient(),u=await currentUser();if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return;try{const {error}=await sb.from('stock_movements').delete().eq('user_id',u.id);if(error)throw error;cloudStockRows=[];renderCloudStock();alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');}catch(err){alert('Gagal menghapus riwayat stok: '+err.message);}};
 
+  // FIX: Print Stok Gudang must use the same live cloudStockRows that are
+  // loaded from Supabase. The previous implementation in index.html read
+  // localStorage keys, so a production print could show stale/empty data.
+  window.printStockReport=function(){
+    try{
+      const rows=runningStock(cloudStockRows);
+      const saldoNow=stockSaldo(cloudStockRows);
+      const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+      const fmt=v=>Number(v||0).toLocaleString('id-ID',{maximumFractionDigits:10,useGrouping:true});
+      const dateText=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?esc(v||'-'):d.toLocaleDateString('id-ID');};
+      const rowsHtml=rows.slice().reverse().map(r=>{
+        const delta=Number(r.delta_butir||0),sign=delta>=0?'+':'-',abs=Math.abs(delta);
+        const conv=abs%30===0?sign+fmt(abs/30)+' Papan | '+sign+fmt(abs)+' Butir':sign+fmt(abs)+' Butir';
+        const qty=sign+fmt(Math.abs(Number(r.qty)||0))+' '+esc(r.unit||'');
+        const after=Number(r.calculated_saldo_after_butir||0);
+        return '<tr><td>'+dateText(r.created_at)+'</td><td>'+esc(r.product||'Telur Ayam Ras')+'</td><td>'+esc(r.movement_type||'')+'</td><td>'+qty+'</td><td>'+conv+'</td><td><b>'+fmt(after)+' Butir</b></td><td>'+esc(r.note||'-')+'</td></tr>';
+      }).join('');
+      const html='<!doctype html><html><head><meta charset="utf-8"><title>Stok Gudang - Barokah Telur</title><style>@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Arial,sans-serif;color:#111;font-size:9px;margin:0}.head{text-align:center;border-bottom:2px solid #14532d;padding-bottom:10px;margin-bottom:12px}.title{font-size:20px;font-weight:900;color:#14532d}.sub{font-size:10px;color:#666;margin-top:2px}.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.card{border:1px solid #ddd;border-radius:7px;padding:8px}.label{font-size:8px;color:#666}.value{font-size:15px;font-weight:900;color:#14532d;margin-top:3px}h2{font-size:12px;margin:12px 0 6px;border-left:4px solid #14532d;padding-left:6px}table{width:100%;border-collapse:collapse;font-size:8px}th{background:#14532d;color:#fff;padding:5px;text-align:left}td{border:1px solid #ddd;padding:4px;vertical-align:top}.foot{text-align:center;border-top:1px dashed #777;margin-top:10px;padding-top:6px;color:#666;font-size:8px}</style></head><body><div class="head"><div class="title">BAROKAH TELUR</div><div class="sub">LAPORAN STOK GUDANG</div><div class="sub">'+esc(new Date().toLocaleString('id-ID'))+'</div></div><div class="summary"><div class="card"><div class="label">STOK GUDANG SAAT INI</div><div class="value">'+fmt(saldoNow)+' Butir</div></div><div class="card"><div class="label">RIWAYAT PERUBAHAN</div><div class="value">'+rows.length+' data</div></div></div><h2>Riwayat Stok Gudang</h2><table><thead><tr><th>Tanggal</th><th>Produk</th><th>Jenis</th><th>Jumlah</th><th>Konversi</th><th>Saldo Setelah</th><th>Keterangan</th></tr></thead><tbody>'+(rowsHtml||'<tr><td colspan="7" style="text-align:center">Belum ada riwayat stok.</td></tr>')+'</tbody></table><div class="foot">Data diambil langsung dari database online saat tombol Print Stok Gudang ditekan.</div></body></html>';
+      const w=window.open('','_blank');
+      if(!w){alert('Izinkan pop-up untuk membuka Print Stok Gudang.');return;}
+      w.document.open();w.document.write(html);w.document.close();
+      setTimeout(()=>{w.focus();w.print();},500);
+    }catch(err){console.error('Print Stok Gudang gagal:',err);alert('Print Stok Gudang gagal: '+(err.message||err));}
+  };
+
   window.barokahCloudSync=async function(){const sb=SB();if(!sb)return;const u=await currentUser();if(!u){gate(true);return;}gate(false);try{await loadTransactions();await loadStock();}catch(err){console.error(err);if(typeof showError==='function')showError('Database online gagal dimuat: '+(err.message||err));}};
 
   async function boot(){try{const sb=requireClient();const {data}=await sb.auth.getSession();if(data.session){sessionStorage.setItem(SESSION,'1');gate(false);await window.barokahCloudSync();}else gate(true);sb.auth.onAuthStateChange(function(event,session){if(session){sessionStorage.setItem(SESSION,'1');gate(false);window.barokahCloudSync();}else{sessionStorage.removeItem(SESSION);gate(true);}});}catch(e){console.error(e);gate(true);}}
   function bootAfterDom(){
     if(window.__barokahCloudBooted)return;
     window.__barokahCloudBooted=true;
-    // Legacy V70 startup/render code runs on DOMContentLoaded and can repaint
-    // LocalStorage data after the cloud loader. Run cloud hydration last.
     setTimeout(function(){boot();},50);
   }
   if(document.readyState==="loading"){
