@@ -36,7 +36,15 @@
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(install,150);});else setTimeout(install,150);
-  // V70.3.7: load the standalone Utang Piutang module without mixing it into transactions.
+
   function loadDebtModule(){if(document.querySelector('script[data-barokah-debt]'))return;var s=document.createElement('script');s.src='utang-piutang.js';s.dataset.barokahDebt='1';s.onload=function(){console.log('Barokah Utang Piutang V70.3.7 loaded');};s.onerror=function(){console.error('Gagal memuat utang-piutang.js');};document.head.appendChild(s);}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(loadDebtModule,300);});else setTimeout(loadDebtModule,300);
+  function loadProfileModule(){
+    if(document.querySelector('script[data-barokah-profile]'))return;
+    var s=document.createElement('script');s.src='profile-v70.3.9.js';s.dataset.barokahProfile='1';
+    s.onload=function(){console.log('Barokah Profile V70.3.9 loaded');};
+    s.onerror=function(){console.error('Gagal memuat profile-v70.3.9.js');};
+    document.head.appendChild(s);
+  }
+  function bootModules(){setTimeout(loadDebtModule,300);setTimeout(loadProfileModule,450);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootModules);else bootModules();
 })();

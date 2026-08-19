@@ -1,0 +1,37 @@
+name: Wire V70.3.9 Dashboard Logo
+
+on:
+  push:
+    branches: [v70.3.9-profile]
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v70.3.9-profile
+          fetch-depth: 0
+      - name: Add dashboard logo sync script
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          tag='<script src="dashboard-logo-sync-v70.3.9.js"></script>'
+          if tag not in s:
+              pos=s.rfind('</body>')
+              if pos < 0: raise SystemExit('No closing body tag')
+              s=s[:pos]+'\n'+tag+'\n'+s[pos:]
+              p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'fix(v70.3.9): load dashboard logo sync [skip ci]'
+          git push origin HEAD:v70.3.9-profile
