@@ -31,7 +31,6 @@
     const paid=document.getElementById('debtPaid');
     [total,paid].forEach(function(el){
       if(!el) return;
-      // Text input is required so the dots can be displayed while typing.
       el.type='text';
       el.inputMode='numeric';
       el.autocomplete='off';
@@ -40,8 +39,6 @@
       el.addEventListener('blur',function(){ formatRupiahInput(el); });
       formatRupiahInput(el);
     });
-    // The original submit handler reads Number(value). Capture phase strips
-    // separators first, so the database still receives a numeric value.
     form.addEventListener('submit',function(){
       [total,paid].forEach(function(el){
         if(el) el.value=digitsOnly(el.value);
@@ -57,4 +54,18 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',watch);
   else watch();
+})();
+
+/* ===== V70.3.8 — load operational module ===== */
+(function(){
+  function loadOperational(){
+    if(document.getElementById('barokahOperationalScript')) return;
+    var s=document.createElement('script');
+    s.id='barokahOperationalScript';
+    s.src='operasional.js?v=70.3.8';
+    s.async=false;
+    document.body.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(loadOperational,50)});
+  else setTimeout(loadOperational,50);
 })();
