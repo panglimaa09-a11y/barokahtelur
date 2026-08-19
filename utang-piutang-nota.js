@@ -2,7 +2,7 @@
   'use strict';
   const SB=()=>window.barokahSupabase;
   const fmt=n=>Number(n||0).toLocaleString('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
-  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const esc=v=>String(v==null?'':v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
   const dateId=v=>v?new Date(v+'T00:00:00').toLocaleDateString('id-ID'):'-';
   function style(){if(document.getElementById('barokahNotaCss'))return;const s=document.createElement('style');s.id='barokahNotaCss';s.textContent='.debt-nota{border:1px solid #d6ded8;border-radius:9px;background:#fff;color:#0d5b45;padding:7px 9px;font-weight:800;font-size:11px;margin-left:4px}.debt-nota:hover{background:#edf8f1}';document.head.appendChild(s)}
   function autoHint(){const form=document.getElementById('debtForm'),ref=document.getElementById('debtRef');if(!form||!ref||ref.dataset.autoReady==='1')return;ref.dataset.autoReady='1';ref.readOnly=true;ref.placeholder='Nomor transaksi dibuat otomatis';ref.title='Nomor transaksi dibuat otomatis oleh database Supabase';const help=document.createElement('small');help.className='debt-help';help.textContent='Nomor transaksi dibuat otomatis dan tidak perlu diketik manual.';ref.parentElement.appendChild(help)}
@@ -10,4 +10,51 @@
   function addNotaButtons(){const box=document.getElementById('debtTable');if(!box)return;box.querySelectorAll('[data-del]').forEach(del=>{const id=del.getAttribute('data-del');if(!id||del.parentElement.querySelector('[data-nota="'+id+'"]'))return;const b=document.createElement('button');b.type='button';b.className='debt-nota';b.dataset.nota=id;b.textContent='🧾 Nota';b.addEventListener('click',()=>printNota(id));del.parentElement.appendChild(b)})}
   function init(){style();autoHint();addNotaButtons();const obs=new MutationObserver(()=>{autoHint();addNotaButtons()});obs.observe(document.body,{childList:true,subtree:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,350));else setTimeout(init,350);
+})();
+
+/* ===== V70.3.7.2 — Rupiah input formatter for Utang Piutang ===== */
+(function(){
+  'use strict';
+  function digitsOnly(v){ return String(v ?? '').replace(/\D/g,''); }
+  function formatRupiahInput(el){
+    if(!el) return;
+    const digits=digitsOnly(el.value);
+    if(!digits){ el.value=''; return; }
+    const normalized=digits.replace(/^0+(?=\d)/,'') || '0';
+    el.value=normalized.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  }
+  function bind(){
+    const form=document.getElementById('debtForm');
+    if(!form || form.dataset.rupiahReady==='1') return;
+    form.dataset.rupiahReady='1';
+    const total=document.getElementById('debtTotal');
+    const paid=document.getElementById('debtPaid');
+    [total,paid].forEach(function(el){
+      if(!el) return;
+      // Text input is required so the dots can be displayed while typing.
+      el.type='text';
+      el.inputMode='numeric';
+      el.autocomplete='off';
+      el.placeholder=el.id==='debtTotal'?'Contoh: 3.000.000':'Contoh: 1.000.000';
+      el.addEventListener('input',function(){ formatRupiahInput(el); });
+      el.addEventListener('blur',function(){ formatRupiahInput(el); });
+      formatRupiahInput(el);
+    });
+    // The original submit handler reads Number(value). Capture phase strips
+    // separators first, so the database still receives a numeric value.
+    form.addEventListener('submit',function(){
+      [total,paid].forEach(function(el){
+        if(el) el.value=digitsOnly(el.value);
+      });
+    },true);
+  }
+  function watch(){
+    bind();
+    if(!window.__barokahDebtRupiahObserver){
+      window.__barokahDebtRupiahObserver=new MutationObserver(bind);
+      window.__barokahDebtRupiahObserver.observe(document.body,{childList:true,subtree:true});
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',watch);
+  else watch();
 })();
