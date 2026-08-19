@@ -5,9 +5,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
   anonKey: "sb_publishable_zbG-wnIOHVoTjVDRvs0zqQ_Aw2-K8Yc"
 };
 
-// Production UI cleanup loader. config.js is already loaded by index.html,
-// so this guarantees the visible print-script leak is removed without
-// changing the application's data or Supabase logic.
+// Existing UI cleanup loader.
 (function(){
   function loadUiCleanup(){
     if(document.querySelector('script[data-barokah-ui-cleanup]')) return;
@@ -19,4 +17,19 @@ window.BAROKAH_SUPABASE_CONFIG = {
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadUiCleanup,{once:true});
   else loadUiCleanup();
+})();
+
+// Isolated Financial Preview A. This branch-only module adds an Omzet card
+// without replacing or modifying existing dashboard modules.
+(function(){
+  function loadFinancialPreview(){
+    if(document.querySelector('script[data-barokah-financial-preview-a]')) return;
+    var s=document.createElement('script');
+    s.src='financial-a-preview.js?v=1';
+    s.async=false;
+    s.dataset.barokahFinancialPreviewA='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreview,{once:true});
+  else loadFinancialPreview();
 })();
