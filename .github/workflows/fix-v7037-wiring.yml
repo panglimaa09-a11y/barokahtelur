@@ -1,0 +1,43 @@
+name: Fix V70.3.7 script wiring
+
+on:
+  push:
+    branches: [v70.3.7-utang-piutang]
+
+permissions:
+  contents: write
+
+jobs:
+  clean-wire:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v70.3.7-utang-piutang
+          fetch-depth: 0
+      - name: Clean and wire scripts only at real document end
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          tags=['<script src="utang-piutang.js"></script>','<script src="utang-piutang-nota.js"></script>']
+          for tag in tags:
+              s=s.replace('\n'+tag,'').replace(tag,'')
+          pos=s.rfind('</body>')
+          if pos < 0:
+              raise SystemExit('No real </body> tag found')
+          injection='\n'+'\n'.join(tags)+'\n'
+          s=s[:pos]+injection+s[pos:]
+          p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'Index already clean.'
+            exit 0
+          fi
+          git commit -m 'fix(v70.3.7): clean script wiring [skip ci]'
+          git push origin HEAD:v70.3.7-utang-piutang
