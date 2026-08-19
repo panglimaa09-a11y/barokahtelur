@@ -19,8 +19,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
   else loadUiCleanup();
 })();
 
-// Isolated Financial Preview A. This branch-only module adds an Omzet card
-// without replacing or modifying existing dashboard modules.
+// Isolated Financial Preview A: Omzet card.
 (function(){
   function loadFinancialPreview(){
     if(document.querySelector('script[data-barokah-financial-preview-a]')) return;
@@ -32,4 +31,18 @@ window.BAROKAH_SUPABASE_CONFIG = {
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreview,{once:true});
   else loadFinancialPreview();
+})();
+
+// Financial Preview B: reuse the existing isolated operational module.
+(function(){
+  function loadOperationalPreview(){
+    if(document.querySelector('script[data-barokah-operasional-preview]')) return;
+    var s=document.createElement('script');
+    s.src='operasional.js?v=70.4.0-b';
+    s.async=false;
+    s.dataset.barokahOperasionalPreview='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadOperationalPreview,{once:true});
+  else loadOperationalPreview();
 })();
