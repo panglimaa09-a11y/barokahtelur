@@ -6,8 +6,7 @@
   function esc(v){ return String(v ?? '').replace(/[&<>'"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[s])); }
 
   async function waitForSession(timeoutMs=8000){
-    const sb=getSB();
-    if(!sb) throw new Error('Koneksi Supabase belum siap.');
+    const sb=getSB(); if(!sb) throw new Error('Koneksi Supabase belum siap.');
     const started=Date.now();
     while(Date.now()-started < timeoutMs){
       const r=await sb.auth.getSession();
@@ -16,21 +15,18 @@
     }
     throw new Error('Sesi login belum tersedia. Silakan login kembali lalu buka Profil.');
   }
-
   async function currentUser(){ return waitForSession(); }
 
   function ensureProfileUI(){
     const nav=document.querySelector('.nav');
     if(nav && !document.getElementById('nav-profile')){
-      const b=document.createElement('button');
-      b.id='nav-profile'; b.type='button'; b.textContent='👤 Profil';
+      const b=document.createElement('button'); b.id='nav-profile'; b.type='button'; b.textContent='👤 Profil';
       b.onclick=function(){ if(typeof window.showPage==='function') window.showPage('profile'); };
       nav.appendChild(b);
     }
     const wrap=document.querySelector('.wrap');
     if(wrap && !document.getElementById('page-profile')){
-      const s=document.createElement('section');
-      s.id='page-profile'; s.className='page';
+      const s=document.createElement('section'); s.id='page-profile'; s.className='page';
       s.innerHTML='<div class="hero"><span class="eyebrow">AKUN & USAHA</span><h1>Profil</h1><p>Kelola data pengguna dan informasi usaha tanpa mengubah data transaksi.</p></div><div id="profileView" data-profile-view></div>';
       wrap.appendChild(s);
     }
@@ -44,12 +40,11 @@
   }
 
   async function uploadLogo(file,user){
-    const sb=getSB();
-    if(!file) return null;
+    const sb=getSB(); if(!file) return null;
     const allowed=['image/jpeg','image/png','image/webp'];
     if(!allowed.includes(file.type)) throw new Error('Logo harus JPG, PNG, atau WEBP.');
-    if(file.size>2*1024*1024) throw new Error('Ukuran logo maksimal 2 MB.');
-    const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+    // Tidak ada batas ukuran di sisi aplikasi. Batas upload mengikuti konfigurasi Storage Supabase.
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
     const path=user.id+'/logo-'+Date.now()+'.'+ext;
     const up=await sb.storage.from('profile-assets').upload(path,file,{contentType:file.type,upsert:true,cacheControl:'3600'});
     if(up.error) throw up.error;
@@ -75,7 +70,7 @@
         <div class="barokah-field"><label>Nama Usaha</label><input name="business_name" value="${esc(p.business_name)}" placeholder="Barokah Telur" autocomplete="organization"></div>
         <div class="barokah-field"><label>Nomor WhatsApp</label><input name="phone" inputmode="tel" value="${esc(p.phone)}" placeholder="08xxxxxxxxxx" autocomplete="tel"></div>
         <div class="barokah-field barokah-field-full"><label>Alamat Usaha</label><textarea name="business_address" rows="3" placeholder="Alamat usaha">${esc(p.business_address)}</textarea></div>
-        <div class="barokah-field barokah-field-full"><label>Logo Usaha</label><div class="barokah-logo-picker"><input id="barokahLogoFile" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="barokah-logo-select" type="button" id="barokahChooseLogo">📁 Pilih Logo dari Galeri / Folder</button><span id="barokahLogoName">${p.logo_url?'Logo tersimpan':'Belum memilih logo'}</span></div><small class="barokah-help">JPG, PNG, WEBP • maksimal 2 MB</small></div>
+        <div class="barokah-field barokah-field-full"><label>Logo Usaha</label><div class="barokah-logo-picker"><input id="barokahLogoFile" type="file" accept="image/jpeg,image/png,image/webp" hidden><button class="barokah-logo-select" type="button" id="barokahChooseLogo">📁 Pilih Logo dari Galeri / Folder</button><span id="barokahLogoName">${p.logo_url?'Logo tersimpan':'Belum memilih logo'}</span></div><small class="barokah-help">JPG, PNG, WEBP • tanpa batas ukuran aplikasi</small></div>
       </div><div class="barokah-profile-actions"><button class="barokah-btn barokah-btn-primary" type="submit">💾 Simpan Profil</button><button class="barokah-btn barokah-btn-secondary" type="button" id="barokahPasswordBtn">🔐 Kirim Link Reset Password</button></div><div id="barokahProfileMsg" class="barokah-profile-msg" role="status"></div></form>
     </div></div>`;
     if(!document.getElementById('barokahProfileResponsiveStyle')){
@@ -92,8 +87,7 @@
   }
 
   async function init(){
-    ensureProfileUI();
-    const root=document.getElementById('profileView');if(!root)return;
+    ensureProfileUI(); const root=document.getElementById('profileView'); if(!root)return;
     root.innerHTML='<div class="card" style="padding:18px">Memuat profil...</div>';
     try{const x=await loadProfile();if(x)render(root,x.user,x.profile);}catch(err){root.innerHTML='<div class="card" style="padding:18px">'+esc(err.message||err)+'</div>';}
   }
