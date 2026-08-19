@@ -5,19 +5,18 @@ window.BAROKAH_SUPABASE_CONFIG = {
   anonKey: "sb_publishable_zbG-wnIOHVoTjVDRvs0zqQ_Aw2-K8Yc"
 };
 
+// Production UI cleanup loader. config.js is already loaded by index.html,
+// so this guarantees the visible print-script leak is removed without
+// changing the application's data or Supabase logic.
 (function(){
-  function loadScript(src,marker){
-    if(document.querySelector('script['+marker+']')) return;
+  function loadUiCleanup(){
+    if(document.querySelector('script[data-barokah-ui-cleanup]')) return;
     var s=document.createElement('script');
-    s.src=src;
+    s.src='ui-bugfix.js?v=2';
     s.async=false;
-    s.setAttribute(marker,'1');
+    s.dataset.barokahUiCleanup='1';
     document.head.appendChild(s);
   }
-  function loadAll(){
-    loadScript('ui-bugfix.js?v=3','data-barokah-ui-cleanup');
-    loadScript('dashboard-financial-sync-v70.4.0.js?v=2','data-barokah-financial-sync');
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadAll,{once:true});
-  else loadAll();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadUiCleanup,{once:true});
+  else loadUiCleanup();
 })();
