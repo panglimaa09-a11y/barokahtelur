@@ -46,14 +46,11 @@ button,input,select{font:inherit}button{cursor:pointer}a{text-decoration:none;co
 .btn.primary{background:#0d5b45;color:#fff}.btn.ghost{background:#fff;color:#163b2f;border:1px solid #dce5df}
 @media(max-width:600px){.file-actions .btn,.history-actions .btn{flex:1}}
 
-
-
 .export-card{border:1px solid rgba(255,255,255,.1)}
 .export-title{font-weight:800;margin-bottom:10px}
 .export-actions{display:flex;flex-wrap:wrap;gap:10px}
 .export-help{display:block;margin-top:10px;opacity:.7}
 @media(max-width:520px){.export-actions .btn{width:100%}}
-
 
 .pr-demo-label{display:none;text-align:center;font:700 9px Arial,sans-serif;letter-spacing:1.5px;color:#777;margin-bottom:5px}.print-demo-watermark{
   position:fixed !important;
@@ -351,8 +348,6 @@ body.admin-entry-locked{overflow:hidden}
 }
 </style>
 
-
-
 <div id="error" class="error"></div>
 <div id="toast" class="toast"></div>
 
@@ -400,7 +395,6 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
         <div class="chartbox"><canvas id="chart"></canvas></div>
       </div>
 
-
       <div class="file-actions">
         <button class="btn primary" id="saveFileBtn" type="button">💾 Simpan File</button>
         <button class="btn ghost" id="restoreFileBtn" type="button">↩️ Pulihkan File</button>
@@ -424,7 +418,6 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
   </div>
   <button class="btn primary" type="button" onclick="showPage('stock')">Buka Stok Gudang</button>
 </div>
-
 
       <div class="kpis">
         <article class="kpi in"><small>Total Pemasukan</small><strong id="totalIncome">Rp 0</strong><span>Pemasukan</span></article>
@@ -600,7 +593,6 @@ function formatPriceField(el){
   el.value=normalized.replace(/\B(?=(\d{3})+(?!\d))/g,".");
 }
 
-
 "use strict";
 const KEY="barokah_telur_owner_final_v1";
 let editingIncome=null,editingExpense=null;
@@ -626,7 +618,6 @@ function parseInputNumber(value){
   if(parts.length>2)return Number(str.replace(/\\./g,""));
   return parts[1].length===3 ? Number(parts[0]+parts[1]) : Number(str);
 }
-
 
 function formatInputNumber(n){
   const v=Number(n||0);
@@ -848,7 +839,6 @@ function renderHistory(){
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 
-
 $("incomeForm").addEventListener("submit",e=>{e.preventDefault();submit("income")});
 $("expenseForm").addEventListener("submit",e=>{e.preventDefault();submit("expense")});
 $("chartYear").addEventListener("change",drawChart);
@@ -867,7 +857,6 @@ updateQtyMode("income");updateQtyMode("expense");
 window.addEventListener("resize",drawChart);
 
 try{render();}catch(e){showError("Terjadi error aplikasi: "+e.message)}
-
 
 function exportDataFile(){
   const payload={
@@ -906,16 +895,10 @@ function importDataFile(){
   input.click();
 }
 
-
-
-
 document.addEventListener("DOMContentLoaded",()=>{
   $("saveFileBtn")?.addEventListener("click",exportDataFile);
   $("historySaveBtn")?.addEventListener("click",exportDataFile);$("restoreFileBtn")?.addEventListener("click",importDataFile);
 });
-
-
-
 
 function deleteTransaction(id){
   const target=String(id);
@@ -953,7 +936,6 @@ function researchDateMatch(dateValue, period){
   }
   return true;
 }
-
 
 function refreshCustomUnitFilters(){
   const units=[...new Set((state.transactions||[]).map(t=>String(t.unit||"").trim()).filter(Boolean))];
@@ -1026,7 +1008,6 @@ function resetResearch(){
   runResearch();
 }
 
-
 document.addEventListener("DOMContentLoaded",()=>{
   $("researchApplyBtn")?.addEventListener("click",runResearch);
   $("researchResetBtn")?.addEventListener("click",resetResearch);
@@ -1061,31 +1042,12 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("deleteAllBtn")?.addEventListener("click",deleteAllTransactions);
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
 document.addEventListener("DOMContentLoaded",()=>{
 });
 
 /* ===== BAROKAH EXPORT — isolated, does not alter app state ===== */
 
-
-
-
-
 document.addEventListener("DOMContentLoaded",bindBarokahExport);
-
-
-
 
 function updateLiveDateTime(){
   const now=new Date();
@@ -1474,13 +1436,6 @@ Menghapus riwayat akan mengosongkan dan menghitung ulang saldo stok pada perangk
     </div>
   </div>
 
-
-
-
-
-
-
-
 <script id="stock-engine-v53">
 (function(){
   const STOCK_KEY="barokah_stock_v53_butir";
@@ -1837,7 +1792,8 @@ function printStockReport(){
     +'<div class="summary"><div class="card"><div class="label">STOK GUDANG SAAT INI</div><div class="value">'+esc(stockValue)+'</div></div><div class="card"><div class="label">RIWAYAT PERUBAHAN</div><div class="value">'+rows.length+' data</div></div></div>'
     +'<h2>Riwayat Stok Gudang</h2><table><thead><tr><th>Tanggal</th><th>Produk</th><th>Jenis</th><th>Jumlah</th><th>Konversi</th><th>Saldo Setelah</th><th>Keterangan</th></tr></thead><tbody>'
     +(rowsHtml||'<tr><td colspan="7" style="text-align:center">Belum ada riwayat stok.</td></tr>')
-    +'</tbody></table><div class="wm"></div><div class="foot">Data sesuai riwayat stok tersimpan pada perangkat</div></body></html>';
+    +'</tbody></table><div class="wm"></div><div class="foot">Data sesuai riwayat stok tersimpan pada perangkat</div>
+</body></html>';
 
   w.document.open();
   w.document.write(html);
@@ -2000,9 +1956,11 @@ document.addEventListener("DOMContentLoaded",function(){
 });
 </script>
 
-
-
 <script src="restore-cloud-fix.js"></script>
 <script src="print-report-fix.js"></script>
+
+
+<script src="utang-piutang.js"></script>
+<script src="utang-piutang-nota.js"></script>
 </body>
 </html>

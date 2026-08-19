@@ -1,0 +1,40 @@
+name: Enable V70.3.7 Utang Piutang + Nota
+
+on:
+  push:
+    branches: [v70.3.7-utang-piutang]
+
+permissions:
+  contents: write
+
+jobs:
+  wire-module:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v70.3.7-utang-piutang
+          fetch-depth: 0
+      - name: Wire scripts into index
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='</body>'
+          tags=['<script src="utang-piutang.js"></script>','<script src="utang-piutang-nota.js"></script>']
+          for tag in tags:
+              if tag not in s:
+                  s=s.replace(marker, tag+'\n'+marker)
+          p.write_text(s,encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- index.html; then
+            echo 'No index changes needed.'
+            exit 0
+          fi
+          git add index.html
+          git commit -m 'chore(v70.3.7): wire utang piutang and nota scripts [skip ci]'
+          git push origin HEAD:v70.3.7-utang-piutang
