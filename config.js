@@ -60,3 +60,31 @@ window.BAROKAH_SUPABASE_CONFIG = {
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewC,{once:true});
   else loadFinancialPreviewC();
 })();
+
+// V70.4.3 Preview: isolated quantity/unit enhancement for Utang Piutang.
+(function(){
+  function loadDebtUnitPreview(){
+    if(document.querySelector('script[data-barokah-debt-unit-preview]')) return;
+    var s=document.createElement('script');
+    s.src='utang-piutang-satuan-v70.4.3.js?v=1';
+    s.async=false;
+    s.dataset.barokahDebtUnitPreview='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadDebtUnitPreview,{once:true});
+  else loadDebtUnitPreview();
+})();
+
+// V70.4.4 Preview: isolated edit actions for Operasional and Utang Piutang.
+(function(){
+  function loadEditEnhancement(){
+    if(document.querySelector('script[data-barokah-edit-44]')) return;
+    var s=document.createElement('script');
+    s.src='edit-operasional-utang-v70.4.4.js?v=1';
+    s.async=false;
+    s.dataset.barokahEdit44='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadEditEnhancement,{once:true});
+  else loadEditEnhancement();
+})();
