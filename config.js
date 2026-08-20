@@ -19,6 +19,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('edit-operasional-utang-v70.4.4.js?v=1','data-barokah-edit-44');
     load('sidebar-v70.4.5.js?v=2','data-barokah-sidebar-v7045');
     load('sidebar-operasional-fix-v70.4.5.js?v=1','data-barokah-sidebar-operasional-fix');
+    load('operasional-sync-v70.4.7.js?v=1','data-barokah-operational-sync');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
