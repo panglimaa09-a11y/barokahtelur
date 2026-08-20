@@ -32,8 +32,7 @@
     card.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">' +
         '<div>' +
-          '<div style="font-size:11px;color:#6d776f;font-weight:800;letter-spacing:.08em">TAHAP C · PREVIEW</div>' +
-          '<h3 style="margin:6px 0 3px">Utang &amp; Piutang</h3>' +
+          '<h3 style="margin:0 0 3px">Utang &amp; Piutang</h3>' +
           '<div style="font-size:12px;color:#6d776f">Sisa tagihan = total tagihan dikurangi pembayaran.</div>' +
         '</div>' +
         '<strong id="financialPreviewCTotalOpen" style="font-size:24px;color:#6841a5">Memuat...</strong>' +
