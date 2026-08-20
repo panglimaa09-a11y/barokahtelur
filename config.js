@@ -24,7 +24,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
   function loadOperationalPreview(){
     if(document.querySelector('script[data-barokah-operasional-preview]')) return;
     var s=document.createElement('script');
-    s.src='operasional.js?v=70.4.0-b';
+    s.src='operasional.js?v=70.0-b';
     s.async=false;
     s.dataset.barokahOperasionalPreview='1';
     document.head.appendChild(s);
@@ -59,4 +59,18 @@ window.BAROKAH_SUPABASE_CONFIG = {
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewC,{once:true});
   else loadFinancialPreviewC();
+})();
+
+// V70.4.3 Preview: isolated quantity/unit enhancement for Utang Piutang.
+(function(){
+  function loadDebtUnitPreview(){
+    if(document.querySelector('script[data-barokah-debt-unit-preview]')) return;
+    var s=document.createElement('script');
+    s.src='utang-piutang-satuan-v70.4.3.js?v=1';
+    s.async=false;
+    s.dataset.barokahDebtUnitPreview='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadDebtUnitPreview,{once:true});
+  else loadDebtUnitPreview();
 })();
