@@ -24,7 +24,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
   function loadOperationalPreview(){
     if(document.querySelector('script[data-barokah-operasional-preview]')) return;
     var s=document.createElement('script');
-    s.src='operasional.js?v=70.0-b';
+    s.src='operasional.js?v=70.4.0-b';
     s.async=false;
     s.dataset.barokahOperasionalPreview='1';
     document.head.appendChild(s);
