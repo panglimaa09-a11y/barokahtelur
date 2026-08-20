@@ -20,7 +20,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('sidebar-v70.4.5.js?v=3','data-barokah-sidebar-v7045');
     load('sidebar-operasional-fix-v70.4.5.js?v=2','data-barokah-sidebar-operasional-fix');
     load('operasional-sync-v70.4.9.js?v=1','data-barokah-operational-sync-v7049');
-    load('stock-edit-delete-v70.5.1.js?v=2','data-barokah-stock-edit-delete-v7051');
+    load('stock-edit-delete-v70.5.2.js?v=1','data-barokah-stock-edit-delete-v7052');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
