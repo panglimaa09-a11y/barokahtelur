@@ -5,9 +5,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
   anonKey: "sb_publishable_zbG-wnIOHVoTjVDRvs0zqQ_Aw2-K8Yc"
 };
 
-// Production UI cleanup loader. config.js is already loaded by index.html,
-// so this guarantees the visible print-script leak is removed without
-// changing the application's data or Supabase logic.
+// Existing UI cleanup loader.
 (function(){
   function loadUiCleanup(){
     if(document.querySelector('script[data-barokah-ui-cleanup]')) return;
@@ -19,4 +17,46 @@ window.BAROKAH_SUPABASE_CONFIG = {
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadUiCleanup,{once:true});
   else loadUiCleanup();
+})();
+
+// Isolated Financial Preview A: Omzet card.
+(function(){
+  function loadFinancialPreview(){
+    if(document.querySelector('script[data-barokah-financial-preview-a]')) return;
+    var s=document.createElement('script');
+    s.src='financial-a-preview.js?v=1';
+    s.async=false;
+    s.dataset.barokahFinancialPreviewA='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreview,{once:true});
+  else loadFinancialPreview();
+})();
+
+// Financial Preview B: existing operational module.
+(function(){
+  function loadOperationalPreview(){
+    if(document.querySelector('script[data-barokah-operasional-preview]')) return;
+    var s=document.createElement('script');
+    s.src='operasional.js?v=70.4.0-b';
+    s.async=false;
+    s.dataset.barokahOperasionalPreview='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadOperationalPreview,{once:true});
+  else loadOperationalPreview();
+})();
+
+// Financial Preview B: isolated Dashboard operational summary.
+(function(){
+  function loadFinancialPreviewB(){
+    if(document.querySelector('script[data-barokah-financial-preview-b]')) return;
+    var s=document.createElement('script');
+    s.src='financial-b-dashboard-preview.js?v=2';
+    s.async=false;
+    s.dataset.barokahFinancialPreviewB='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewB,{once:true});
+  else loadFinancialPreviewB();
 })();
