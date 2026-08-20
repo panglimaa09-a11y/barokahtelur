@@ -1,9 +1,12 @@
 -- Barokah Telur V70.4.3 - satuan pada Utang Piutang
--- Jalankan sekali di Supabase. Tidak menghapus atau mengubah data lama.
+-- Jalankan sekali di Supabase. Aman dijalankan ulang.
 
-alter table public.debts_receivables
-  add column if not exists quantity numeric(14,3) not null default 1,
-  add column if not exists unit text not null default 'Paket';
+ALTER TABLE public.debts_receivables
+  ADD COLUMN IF NOT EXISTS quantity numeric(14,3) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS unit text NOT NULL DEFAULT 'Paket';
 
-create index if not exists debts_receivables_user_unit_idx
-  on public.debts_receivables(user_id, unit);
+CREATE INDEX IF NOT EXISTS debts_receivables_user_unit_idx
+  ON public.debts_receivables(user_id, unit);
+
+-- Minta PostgREST memuat ulang schema agar quantity/unit langsung dikenali.
+NOTIFY pgrst, 'reload schema';
