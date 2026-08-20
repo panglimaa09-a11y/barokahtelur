@@ -1,18 +1,33 @@
 (function(){
   'use strict';
+  function syncOperational(){
+    try{
+      window.dispatchEvent(new CustomEvent('barokah:operational-open'));
+      if(window.BarokahOperationalSync && typeof window.BarokahOperationalSync.sync==='function'){
+        window.BarokahOperationalSync.sync();
+      }
+    }catch(e){console.warn('Operational sync trigger failed:',e);}
+  }
   function init(){
     var side=document.getElementById('barokahSidebar');
     if(!side)return false;
     var menu=side.querySelector('.bs-menu');
     if(!menu)return false;
 
-    // Remove the original sidebar entry because its page key does not open
-    // the actual Operational module. Keep only this functional entry.
     var old=side.querySelector('[data-page="operasional"]');
     if(old)old.remove();
 
-    // Prevent duplicate functional entries if this script is loaded again.
-    if(side.querySelector('[data-page="operational"]'))return true;
+    var existing=side.querySelector('[data-page="operational"]');
+    if(existing){
+      existing.onclick=function(){
+        if(typeof window.showPage==='function')window.showPage('operational');
+        var p=document.getElementById('page-operational');
+        if(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});p.classList.add('active');}
+        side.querySelectorAll('.bs-btn[data-page]').forEach(function(x){x.classList.toggle('active',x.dataset.page==='operational')});
+        setTimeout(syncOperational,50);
+      };
+      return true;
+    }
 
     var b=document.createElement('button');
     b.className='bs-btn';
@@ -25,12 +40,13 @@
         var p=document.getElementById('page-operational');
         if(p){document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active')});p.classList.add('active');}
         side.querySelectorAll('.bs-btn[data-page]').forEach(function(x){x.classList.toggle('active',x.dataset.page==='operational')});
+        setTimeout(syncOperational,50);
       }
       if(document.getElementById('page-operational')){openPage();return;}
       var s=document.createElement('script');
-      s.src='operasional.js?v=70.4.5-fix';
+      s.src='operasional.js?v=70.4.8-route-fix';
       s.async=false;
-      s.onload=function(){setTimeout(openPage,80)};
+      s.onload=function(){setTimeout(openPage,150)};
       s.onerror=function(){alert('Modul Operasional gagal dimuat. Periksa file operasional.js.');};
       document.head.appendChild(s);
     });

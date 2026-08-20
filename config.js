@@ -17,8 +17,9 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('financial-c-dashboard-preview.js?v=70.4.1','data-barokah-financial-preview-c');
     load('utang-piutang-satuan-v70.4.3.js?v=1','data-barokah-debt-unit-preview');
     load('edit-operasional-utang-v70.4.4.js?v=1','data-barokah-edit-44');
-    load('sidebar-v70.4.5.js?v=2','data-barokah-sidebar-v7045');
-    load('sidebar-operasional-fix-v70.4.5.js?v=1','data-barokah-sidebar-operasional-fix');
+    load('sidebar-v70.4.5.js?v=3','data-barokah-sidebar-v7045');
+    load('sidebar-operasional-fix-v70.4.5.js?v=2','data-barokah-sidebar-operasional-fix');
+    load('operasional-sync-v70.4.9.js?v=1','data-barokah-operational-sync-v7049');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
