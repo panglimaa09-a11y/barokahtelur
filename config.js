@@ -60,3 +60,17 @@ window.BAROKAH_SUPABASE_CONFIG = {
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewB,{once:true});
   else loadFinancialPreviewB();
 })();
+
+// Financial Stage C: isolated Dashboard Utang & Piutang summary.
+(function(){
+  function loadFinancialPreviewC(){
+    if(document.querySelector('script[data-barokah-financial-preview-c]')) return;
+    var s=document.createElement('script');
+    s.src='financial-c-dashboard-preview.js?v=70.4.1';
+    s.async=false;
+    s.dataset.barokahFinancialPreviewC='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewC,{once:true});
+  else loadFinancialPreviewC();
+})();
