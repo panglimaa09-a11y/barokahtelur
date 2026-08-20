@@ -19,44 +19,58 @@ window.BAROKAH_SUPABASE_CONFIG = {
   else loadUiCleanup();
 })();
 
-// Financial Preview B: existing operational module.
+// Existing operational module.
 (function(){
-  function loadOperationalPreview(){
-    if(document.querySelector('script[data-barokah-operasional-preview]')) return;
+  function loadOperational(){
+    if(document.querySelector('script[data-barokah-operasional]')) return;
     var s=document.createElement('script');
     s.src='operasional.js?v=70.4.0-b';
     s.async=false;
-    s.dataset.barokahOperasionalPreview='1';
+    s.dataset.barokahOperasional='1';
     document.head.appendChild(s);
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadOperationalPreview,{once:true});
-  else loadOperationalPreview();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadOperational,{once:true});
+  else loadOperational();
 })();
 
-// Financial Preview B: isolated Dashboard operational summary.
+// Dashboard operational summary.
 (function(){
-  function loadFinancialPreviewB(){
-    if(document.querySelector('script[data-barokah-financial-preview-b]')) return;
+  function loadFinancialB(){
+    if(document.querySelector('script[data-barokah-financial-b]')) return;
     var s=document.createElement('script');
-    s.src='financial-b-dashboard-preview.js?v=2';
+    s.src='financial-b-dashboard-preview.js?v=70.4.2';
     s.async=false;
-    s.dataset.barokahFinancialPreviewB='1';
+    s.dataset.barokahFinancialB='1';
     document.head.appendChild(s);
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewB,{once:true});
-  else loadFinancialPreviewB();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialB,{once:true});
+  else loadFinancialB();
 })();
 
-// Financial Stage C: isolated Dashboard Utang & Piutang summary.
+// Dashboard Utang & Piutang summary.
 (function(){
-  function loadFinancialPreviewC(){
-    if(document.querySelector('script[data-barokah-financial-preview-c]')) return;
+  function loadFinancialC(){
+    if(document.querySelector('script[data-barokah-financial-c]')) return;
     var s=document.createElement('script');
     s.src='financial-c-dashboard-preview.js?v=70.4.1';
     s.async=false;
-    s.dataset.barokahFinancialPreviewC='1';
+    s.dataset.barokahFinancialC='1';
     document.head.appendChild(s);
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewC,{once:true});
-  else loadFinancialPreviewC();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialC,{once:true});
+  else loadFinancialC();
+})();
+
+// Isolated operational edit + print enhancement. Does not replace operasional.js.
+(function(){
+  function loadOperationalEditPrint(){
+    if(document.querySelector('script[data-barokah-operational-edit-print]')) return;
+    var s=document.createElement('script');
+    s.src='operasional-edit-print.js?v=70.4.2';
+    s.async=false;
+    s.dataset.barokahOperationalEditPrint='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadOperationalEditPrint,{once:true});
+  else loadOperationalEditPrint();
 })();
