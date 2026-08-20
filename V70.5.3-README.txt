@@ -1,0 +1,1 @@
+V70.5.3 Preview. Run supabase-migration-v70.5.3-stock-edit-rpc.sql once in Supabase SQL Editor before testing.
