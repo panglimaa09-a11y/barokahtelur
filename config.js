@@ -20,6 +20,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('sidebar-v70.4.5.js?v=2','data-barokah-sidebar-v7045');
     load('sidebar-operasional-fix-v70.4.5.js?v=1','data-barokah-sidebar-operasional-fix');
     load('operasional-sync-v70.4.8.js?v=1','data-barokah-operational-sync-v7048');
+    load('sidebar-operasional-route-fix-v70.4.8.js?v=1','data-barokah-operational-route-fix-v7048');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
