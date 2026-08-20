@@ -33,7 +33,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
   else loadFinancialPreview();
 })();
 
-// Financial Preview B: reuse the existing isolated operational module.
+// Financial Preview B: existing operational module.
 (function(){
   function loadOperationalPreview(){
     if(document.querySelector('script[data-barokah-operasional-preview]')) return;
@@ -45,4 +45,18 @@ window.BAROKAH_SUPABASE_CONFIG = {
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadOperationalPreview,{once:true});
   else loadOperationalPreview();
+})();
+
+// Financial Preview B: isolated Dashboard operational summary.
+(function(){
+  function loadFinancialPreviewB(){
+    if(document.querySelector('script[data-barokah-financial-preview-b]')) return;
+    var s=document.createElement('script');
+    s.src='financial-b-dashboard-preview.js?v=2';
+    s.async=false;
+    s.dataset.barokahFinancialPreviewB='1';
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',loadFinancialPreviewB,{once:true});
+  else loadFinancialPreviewB();
 })();
