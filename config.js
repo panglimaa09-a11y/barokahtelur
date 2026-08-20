@@ -21,6 +21,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('sidebar-operasional-fix-v70.4.5.js?v=2','data-barokah-sidebar-operasional-fix');
     load('operasional-sync-v70.4.9.js?v=1','data-barokah-operational-sync-v7049');
     load('stock-gudang-integrated-v70.5.3.js?v=1','data-barokah-stock-integrated-v7053');
+    load('stock-gudang-integrated-hooks-v70.5.3.js?v=1','data-barokah-stock-integrated-hooks-v7053');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
