@@ -9,27 +9,29 @@
   async function user(){const sb=SB();if(!sb)return null;const r=await sb.auth.getUser();return r.data&&r.data.user?r.data.user:null;}
   async function load(){
     const sb=SB();const u=await user();if(!sb||!u)return [];
-    const q=await sb.from('debts_receivables').select('id,kind,party_type,party_name,phone,reference_no,debt_date,total_amount,paid_amount,quantity,unit,note').eq('user_id',u.id).order('debt_date',{ascending:false}).order('created_at',{ascending:false});
+    const q=await sb.from('debts_receivables').select('id,kind,party_type,party_name,phone,reference_no,debt_date,total_amount,paid_amount,quantity,unit,note').eq('user_id',u.id).order('debt_date',{ascending:false});
     if(q.error)throw q.error;return q.data||[];
   }
   function activeKind(){
     const p=document.querySelector('#page-debt');if(!p)return kind;
-    const active=[...p.querySelectorAll('button')].find(b=>b.classList.contains('active') && /Piutang Pelanggan|Utang Supplier/i.test(b.textContent||''));
-    if(active) return /Utang Supplier/i.test(active.textContent)?'utang':'piutang';
+    const active=[...p.querySelectorAll('button')].find(b=>b.classList.contains('active')&&/Piutang Pelanggan|Utang Supplier/i.test(b.textContent||''));
+    if(active)return /Utang Supplier/i.test(active.textContent)?'utang':'piutang';
     return kind;
   }
   function css(){
     if(document.getElementById('debtHistory63Css'))return;
     const s=document.createElement('style');s.id='debtHistory63Css';s.textContent=`
-      .b63-history{padding:0 18px 18px}.b63-tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.b63-tools input{height:40px;flex:1;min-width:180px;border:1px solid #d6ded8;border-radius:10px;padding:0 12px}.b63-table-wrap{overflow:auto;border:1px solid #e5ebe6;border-radius:14px}.b63-table{width:100%;min-width:720px;border-collapse:collapse}.b63-table th,.b63-table td{padding:12px;border-bottom:1px solid #edf0ed;text-align:left;font-size:12px}.b63-table th{font-size:10px;color:#6d776f;text-transform:uppercase}.b63-table tr:last-child td{border-bottom:0}.b63-amount{font-weight:850;color:#0a7748}.b63-balance{font-weight:850}.b63-actions{white-space:nowrap}.b63-actions button{margin-right:5px}.b63-empty{padding:28px;text-align:center;color:#6d776f;border:1px dashed #d6ded8;border-radius:14px}.b63-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf8f1;color:#0d5b45;font-size:10px;font-weight:800}
-      @media(max-width:600px){.b63-history{padding:0 10px 14px}.b63-table{min-width:680px}}
+      .b63-history{margin-top:12px}.b63-tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.b63-tools input{height:40px;flex:1;min-width:180px;border:1px solid #d6ded8;border-radius:10px;padding:0 12px}.b63-table-wrap{overflow:auto;border:1px solid #e5ebe6;border-radius:14px}.b63-table{width:100%;min-width:720px;border-collapse:collapse}.b63-table th,.b63-table td{padding:12px;border-bottom:1px solid #edf0ed;text-align:left;font-size:12px}.b63-table th{font-size:10px;color:#6d776f;text-transform:uppercase}.b63-table tr:last-child td{border-bottom:0}.b63-amount{font-weight:850;color:#0a7748}.b63-balance{font-weight:850}.b63-actions{white-space:nowrap}.b63-actions button{margin-right:5px}.b63-empty{padding:28px;text-align:center;color:#6d776f;border:1px dashed #d6ded8;border-radius:14px}.b63-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#edf8f1;color:#0d5b45;font-size:10px;font-weight:800}@media(max-width:600px){.b63-table{min-width:680px}}
     `;document.head.appendChild(s);
   }
   function render(){
     if(rendering)return;const box=document.getElementById('debtTable');if(!box)return;rendering=true;
     kind=activeKind();
     const filtered=rows.filter(r=>r.kind===kind);
-    const existing=box.querySelector('.b63-history');if(existing)existing.remove();
+    const old=box.querySelector('.b63-history');if(old)old.remove();
+    // Remove only the stale empty state or stale table produced by the broken renderer.
+    box.querySelectorAll('.empty').forEach(el=>el.remove());
+    box.querySelectorAll('table:not(.b63-table)').forEach(el=>el.closest('.table-wrap')?.remove()||el.remove());
     const wrap=document.createElement('div');wrap.className='b63-history';
     wrap.innerHTML='<div class="b63-tools"><input id="b63Search" type="search" placeholder="Cari nama / referensi..."><span class="b63-badge">'+(kind==='piutang'?'Piutang Pelanggan':'Utang Supplier')+'</span></div><div id="b63List"></div>';
     box.appendChild(wrap);
@@ -44,11 +46,18 @@
     }
     const input=wrap.querySelector('#b63Search');input.addEventListener('input',()=>paint(input.value));paint('');rendering=false;
   }
+  async function removeDebt(id){
+    const u=await user();const sb=SB();if(!u||!sb)return;
+    if(!confirm('Hapus catatan utang/piutang ini?'))return;
+    const q=await sb.from('debts_receivables').delete().eq('id',id).eq('user_id',u.id);if(q.error){alert('Gagal menghapus: '+q.error.message);return;}
+    document.dispatchEvent(new CustomEvent('barokah:debt-changed'));await sync();
+  }
   async function sync(){try{rows=await load();render();}catch(e){console.warn('[Barokah] debt history sync v70.6.3',e)}}
   function bind(){
     if(bound)return;bound=true;
     const p=document.getElementById('page-debt');if(!p){bound=false;return;}
-    p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const t=b.textContent||'';if(/Piutang Pelanggan|Utang Supplier/i.test(t)){kind=/Utang Supplier/i.test(t)?'utang':'piutang';setTimeout(render,120)}});
+    p.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const t=b.textContent||'';if(/Piutang Pelanggan|Utang Supplier/i.test(t)){kind=/Utang Supplier/i.test(t)?'utang':'piutang';setTimeout(render,120)}if(b.dataset.b63Delete)removeDebt(b.dataset.b63Delete)});
+    document.addEventListener('click',e=>{const b=e.target.closest('#debtTable [data-del]');if(b&&b.dataset.b63Bound!=='1'){b.dataset.b63Bound='1';b.addEventListener('click',ev=>{ev.preventDefault();ev.stopPropagation();removeDebt(b.dataset.del)},{once:true})}});
     document.addEventListener('barokah:debt-changed',()=>setTimeout(sync,80));
     window.addEventListener('focus',()=>setTimeout(sync,100));
     setInterval(()=>{if(document.getElementById('page-debt')?.classList.contains('active'))sync()},5000);
