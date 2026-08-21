@@ -23,6 +23,10 @@
     return true;
   }
   async function loadPanel(id){const p=document.getElementById(id);if(!p)return;const body=p.querySelector('.ht-body'),kind=p.dataset.kind;body.innerHTML='<div class="ht-loading">Memuat data...</div>';try{const sb=await getClient(),user=await getUser(sb),result=await queryCandidates(sb,TABLES[kind],user.id);if(result.error){body.innerHTML='<div class="ht-error">Riwayat belum tersedia: '+esc(result.error.message||'Gagal membaca data')+'</div>';return;}body.innerHTML=renderRows(kind,result.rows)+'<div class="ht-count">Maksimal 100 data terbaru</div>';}catch(e){body.innerHTML='<div class="ht-error">Gagal memuat riwayat: '+esc(e.message||e)+'</div>';}}
-  async function boot(){for(let i=0;i<60;i++){if(inject())break;await new Promise(r=>setTimeout(r,100));}if(document.getElementById('historyColumnsV7040')){await Promise.all(['ht-transactions','ht-debts','ht-operational'].map(loadPanel));const nav=document.getElementById('nav-history');if(nav)nav.addEventListener('click',()=>setTimeout(()=>Promise.all(['ht-transactions','ht-debts','ht-operational'].map(loadPanel)),150));}}
+  function loadDebtSync(){
+    if(document.getElementById('barokahUtangSync7060'))return;
+    const s=document.createElement('script');s.id='barokahUtangSync7060';s.src='./utang-piutang-sync-v70.6.0.js';s.defer=true;document.head.appendChild(s);
+  }
+  async function boot(){for(let i=0;i<60;i++){if(inject())break;await new Promise(r=>setTimeout(r,100));}loadDebtSync();if(document.getElementById('historyColumnsV7040')){await Promise.all(['ht-transactions','ht-debts','ht-operational'].map(loadPanel));const nav=document.getElementById('nav-history');if(nav)nav.addEventListener('click',()=>setTimeout(()=>Promise.all(['ht-transactions','ht-debts','ht-operational'].map(loadPanel)),150));}}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
