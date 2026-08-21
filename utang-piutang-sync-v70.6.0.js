@@ -2,8 +2,6 @@
   'use strict';
   const SB=()=>window.barokahSupabase;
   const today=()=>new Date().toISOString().slice(0,10);
-  const money=n=>Number(n||0).toLocaleString('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
-  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
   let channel=null;
   let installed=false;
@@ -112,25 +110,32 @@
     return true;
   }
 
-  function notifyHistory(){
+  async function forceDebtPageReload(){
     try{
-      if(typeof window.load==='function' && document.getElementById('page-debt')?.classList.contains('active')) window.load();
-      const nav=document.getElementById('nav-history');
-      if(nav && document.getElementById('page-history')?.classList.contains('active')) nav.dispatchEvent(new Event('click'));
-    }catch(e){console.warn('[utang-sync refresh]',e)}
+      const page=document.getElementById('page-debt');
+      const nav=document.getElementById('debtNavBtn');
+      if(!page || !page.classList.contains('active')) return;
+      // The original Utang Piutang module keeps its load() function private.
+      // Re-clicking its navigation button invokes that same private loader,
+      // guaranteeing the page uses the exact same Supabase user/query as the module itself.
+      if(nav){ nav.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})); return; }
+      // Fallback: trigger the module's own route if a named showPage exists.
+      if(typeof window.showPage==='function') window.showPage('debt');
+    }catch(e){ console.warn('[utang-sync page reload]',e); }
   }
 
-  async function refreshDebtHistory(){
+  function refreshDebtHistory(){
+    forceDebtPageReload();
     try{
-      if(typeof window.load==='function' && document.getElementById('page-debt')) await window.load();
-    }catch(e){console.warn('[utang-sync debt reload]',e)}
-    notifyHistory();
+      if(typeof window.refreshFinancialDashboard==='function') window.refreshFinancialDashboard();
+      window.dispatchEvent(new CustomEvent('barokah:debt-changed'));
+    }catch(e){ console.warn('[utang-sync refresh]',e); }
   }
 
   function realtime(){
     const sb=SB();
     if(!sb || !sb.channel || channel) return;
-    channel=sb.channel('barokah-debt-sync-v7060')
+    channel=sb.channel('barokah-debt-sync-v7070')
       .on('postgres_changes',{event:'*',schema:'public',table:'debts_receivables'},()=>refreshDebtHistory())
       .on('postgres_changes',{event:'*',schema:'public',table:'debt_payments'},()=>refreshDebtHistory())
       .subscribe();
@@ -143,6 +148,13 @@
     setTimeout(()=>clearInterval(timer),30000);
     window.addEventListener('barokah:debt-changed',refreshDebtHistory);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden) refreshDebtHistory();});
+    // If the page is already open when this patch loads, retry its loader briefly.
+    let tries=0;
+    const pageTimer=setInterval(()=>{
+      tries++;
+      forceDebtPageReload();
+      if(tries>=20) clearInterval(pageTimer);
+    },1000);
     setTimeout(realtime,1200);
   }
 
