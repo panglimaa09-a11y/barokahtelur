@@ -22,7 +22,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('operasional-sync-v70.4.9.js?v=1','data-barokah-operational-sync-v7049');
     load('stock-gudang-integrated-v70.5.3.js?v=1','data-barokah-stock-integrated-v7053');
     load('stock-gudang-integrated-hooks-v70.5.3.js?v=1','data-barokah-stock-integrated-hooks-v7053');
-    load('barokah-final-fix-v70.6.1.js?v=1','data-barokah-final-fix-v7061');
+    load('debt-dashboard-sync-v70.6.2.js?v=1','data-barokah-debt-dashboard-sync-v7062');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
