@@ -78,3 +78,16 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(install,100);});
   else setTimeout(install,100);
 })();
+
+// V70.7 preview bugfix loader. Production is untouched.
+(function(){
+  function load(){
+    if(document.getElementById('barokah-v707-script'))return;
+    var s=document.createElement('script');
+    s.id='barokah-v707-script';
+    s.src='barokah-bugfix-v70.7.js';
+    s.defer=false;
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+})();
