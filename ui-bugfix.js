@@ -9,10 +9,6 @@
       'document.getElementById(\'barokahPrintBtn\')',
       'Print Laporan gagal:'
     ];
-
-    // The previous print patch accidentally contained literal </script> tags
-    // inside another script string. The browser therefore exposed the rest of
-    // that script as plain text in the page. Remove only those leaked text nodes.
     const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
     const nodes=[];
     let node;
@@ -24,10 +20,6 @@
       if(parent && (parent.tagName==='SCRIPT'||parent.tagName==='STYLE'||parent.tagName==='NOSCRIPT')) return;
       textNode.remove();
     });
-
-    // If the leaked code was wrapped into a normal element, remove that empty
-    // wrapper as well, but never remove an application section/card containing
-    // legitimate content.
     document.querySelectorAll('body *').forEach(function(el){
       if(el.tagName==='SCRIPT'||el.tagName==='STYLE'||el.tagName==='NOSCRIPT') return;
       const text=(el.textContent||'').trim();
@@ -37,20 +29,27 @@
         if(!hasAppContent && el!==document.body && el!==document.documentElement) el.remove();
       }
     });
-
-    // Revision/demo watermark must only exist on printed output, never in app UI.
     document.querySelectorAll('.print-demo-watermark,.pr-demo-label').forEach(function(el){
       if(!el.closest('#printReport')) el.style.display='none';
     });
-
-    // The revision footer is development-only and must not be visible to the owner.
     document.querySelectorAll('footer').forEach(function(el){
       if((el.textContent||'').includes('Tahap Revisi')) el.style.display='none';
     });
   }
 
+  function loadStableDebt(){
+    if(window.__stableDebtRendererLoaded)return;
+    window.__stableDebtRendererLoaded=true;
+    const s=document.createElement('script');
+    s.src='/debt-stable-render-v70.8-preview.js?v=1';
+    s.async=false;
+    s.onload=function(){window.dispatchEvent(new Event('barokah:stable-debt-ready'));};
+    document.head.appendChild(s);
+  }
+
   function start(){
     clean();
+    loadStableDebt();
     setTimeout(clean,250);
     setTimeout(clean,1000);
     setTimeout(clean,2500);
