@@ -8,7 +8,7 @@
   function style(){
     if(document.getElementById('barokahNotaCss'))return;
     const s=document.createElement('style');s.id='barokahNotaCss';
-    s.textContent='.debt-nota{border:1px solid #d6ded8;border-radius:9px;background:#fff;color:#0d5b45;padding:7px 9px;font-weight:800;font-size:11px;margin-left:4px;white-space:nowrap;cursor:pointer}.debt-nota:hover{background:#edf8f1}.debt-table td:last-child{white-space:nowrap}';
+    s.textContent='.debt-nota{border:1px solid #d6ded8;border-radius:9px;background:#fff;color:#0d5b45;padding:7px 9px;font-weight:800;font-size:11px;margin-left:4px;white-space:nowrap;cursor:pointer}.debt-nota:hover{background:#edf8f1}.debt-table td:last-child{white-space:nowrap}.debt-table .debt-actions-cell{min-width:330px;contain:layout style}.debt-table{overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}';
     document.head.appendChild(s);
   }
 
@@ -32,30 +32,48 @@
     }catch(e){alert('Gagal membuat nota: '+(e.message||e));}
   }
 
+  let syncing=false;
   function syncButtons(){
+    if(syncing)return;
     const box=document.getElementById('debtTable');
     if(!box)return;
+    const scroller=box;
+    const savedScroll=scroller.scrollLeft;
+    const pending=[];
     box.querySelectorAll('[data-del]').forEach(del=>{
       const id=del.getAttribute('data-del');
       if(!id||del.parentElement.querySelector('[data-nota="'+id+'"]'))return;
-      const b=document.createElement('button');
-      b.type='button';b.className='debt-nota';b.dataset.nota=id;b.textContent='🧾 Nota';
-      del.parentElement.appendChild(b);
+      pending.push([del.parentElement,id]);
     });
+    if(!pending.length)return;
+    syncing=true;
+    try{
+      pending.forEach(([parent,id])=>{
+        if(parent.querySelector('[data-nota="'+id+'"]'))return;
+        const b=document.createElement('button');
+        b.type='button';b.className='debt-nota';b.dataset.nota=id;b.textContent='🧾 Nota';
+        parent.appendChild(b);
+      });
+    }finally{
+      requestAnimationFrame(()=>{scroller.scrollLeft=savedScroll;syncing=false;});
+    }
   }
-
-  function delayedSync(){setTimeout(syncButtons,60);}
 
   function init(){
     style();
-    delayedSync();
+    const start=()=>{
+      const box=document.getElementById('debtTable');
+      if(!box)return;
+      const observer=new MutationObserver(()=>syncButtons());
+      observer.observe(box,{childList:true,subtree:true});
+      syncButtons();
+    };
+    if(document.getElementById('debtTable'))start();
+    else setTimeout(start,500);
     document.addEventListener('click',function(e){
       const nota=e.target.closest&&e.target.closest('[data-nota]');
-      if(nota){e.preventDefault();e.stopPropagation();printNota(nota.dataset.nota);return;}
-      if(e.target.closest&&e.target.closest('[data-debt-tab],[data-pay],[data-del],#debtNavBtn,#debtPrint'))delayedSync();
-    },true);
-    document.addEventListener('input',function(e){if(e.target&&e.target.id==='debtSearch')delayedSync();},true);
-    document.addEventListener('submit',function(e){if(e.target&&e.target.id==='debtForm')delayedSync();},true);
+      if(nota){e.preventDefault();e.stopPropagation();printNota(nota.dataset.nota);}
+    },false);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,350));else setTimeout(init,350);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,350),{once:true});else setTimeout(init,350);
 })();
