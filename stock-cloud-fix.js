@@ -10,29 +10,47 @@
   const running=a=>{let s=0;return ordered(a).map(r=>{s+=Number(r.delta_butir||0);return Object.assign({},r,{_saldo:s});});};
   const total=()=>rows.reduce((s,r)=>s+Number(r.delta_butir||0),0);
   const stockPage=()=>document.getElementById('page-stock');
+  const operationalPage=()=>document.getElementById('page-operational');
   const visibleStockHistory=()=>{
     const page=stockPage();
     return page?.querySelector('#stockHistory')||document.querySelector('#page-stock #stockHistory');
   };
+  function isOperationalVisible(){
+    const page=operationalPage();
+    return !!page && (page.classList.contains('active') || getComputedStyle(page).display!=='none');
+  }
+  function hideOrphanStockBlock(node){
+    if(!node||node.closest('#page-stock'))return;
+    const text=String(node.textContent||'').replace(/\s+/g,' ').trim();
+    const looksLikeStock=text.includes('Riwayat Stok Gudang') || text.includes('Semua perubahan stok tercatat otomatis');
+    if(!looksLikeStock)return;
+    if(node.closest('#page-operational'))return;
+    node.style.setProperty('display','none','important');
+    node.setAttribute('data-stock-orphan-hidden','1');
+  }
   function isolateLegacyStockHistory(){
     const pageBox=visibleStockHistory();
     document.querySelectorAll('#stockHistory').forEach(box=>{
       if(pageBox&&box===pageBox)return;
-      let node=box.parentElement, hidden=false;
-      for(let i=0;i<6&&node;i++,node=node.parentElement){
+      let node=box.parentElement;
+      for(let i=0;i<8&&node;i++,node=node.parentElement){
         const text=String(node.textContent||'').replace(/\s+/g,' ');
-        if(text.includes('Riwayat Stok Gudang')&&text.includes('Hapus Riwayat Stok')){
-          node.style.display='none';
-          node.setAttribute('data-stock-legacy-hidden','1');
-          hidden=true;
+        if(text.includes('Riwayat Stok Gudang')||text.includes('Hapus Riwayat Stok')){
+          hideOrphanStockBlock(node);
           break;
         }
       }
-      if(!hidden){
-        box.style.display='none';
-        box.setAttribute('data-stock-legacy-hidden','1');
-      }
     });
+    if(isOperationalVisible()){
+      document.querySelectorAll('body *').forEach(el=>{
+        if(el.id==='page-stock'||el.closest('#page-stock'))return;
+        if(el.dataset.stockOrphanHidden==='1')return;
+        const text=String(el.textContent||'').replace(/\s+/g,' ').trim();
+        if(text==='Riwayat Stok Gudang' || text==='Semua perubahan stok tercatat otomatis: stok masuk, stok keluar, dan telur retak/tidak layak.'){
+          hideOrphanStockBlock(el.closest('.card,.stock-history-card,.panel,section,div')||el.parentElement);
+        }
+      });
+    }
   }
   async function user(){const sb=window.barokahSupabase;if(!sb)return null;const r=await sb.auth.getUser();return r.data&&r.data.user?r.data.user:null;}
   async function load(){const sb=window.barokahSupabase,u=await user();if(!sb||!u)return;const r=await sb.from('stock_movements').select('*').eq('user_id',u.id).order('created_at',{ascending:true}).order('id',{ascending:true});if(r.error){console.error('Stock cloud load:',r.error);return;}rows=r.data||[];render();}
@@ -59,4 +77,9 @@
   function install(){window.addStockIn=()=>add('Masuk');window.addStockOut=()=>add('Keluar');window.addBadEggs=()=>add('Retak');window.addUnfitEggs=()=>add('Tidak Layak');window.clearStockHistory=clear;window.renderStock=render;window.getWarehouseStock=total;window.printStockReport=print;load();isolateLegacyStockHistory();}
   window.addEventListener('barokah:supabase-ready',install,{once:false});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,300),{once:true});else setTimeout(install,300);
+  if(document.body){
+    const mo=new MutationObserver(()=>isolateLegacyStockHistory());
+    mo.observe(document.body,{childList:true,subtree:true});
+    setInterval(isolateLegacyStockHistory,1000);
+  }
 })();
