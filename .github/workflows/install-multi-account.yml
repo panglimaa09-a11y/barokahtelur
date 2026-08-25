@@ -1,0 +1,45 @@
+name: Install multi-account manager
+
+on:
+  push:
+    branches: [v70.3.6-multi-account]
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject multi-account script
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          tag = '<script src="multi-account.js"></script>'
+          s = s.replace(tag, '')
+          marker = '</body>'
+          pos = s.rfind(marker)
+          if pos < 0:
+              raise SystemExit('index.html tidak memiliki </body>')
+          s = s[:pos] + tag + '\n' + s[pos:]
+          p.write_text(s, encoding='utf-8')
+          print('Multi-account manager installed before final </body>.')
+
+      - name: Commit generated change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "feat: enable multi-account manager"
+            git push
+          fi
+
+      # Preview-only branch; main/production is intentionally untouched.
