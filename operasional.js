@@ -2,7 +2,7 @@
   'use strict';
   const SB=()=>window.barokahSupabase;
   const fmt=n=>Number(n||0).toLocaleString('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
-  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const esc=v=>String(v==null?'':v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
   const today=()=>new Date().toISOString().slice(0,10);
   const digits=v=>String(v??'').replace(/\D/g,'');
   const rupiahInput=v=>{const d=digits(v);if(!d)return '';return (d.replace(/^0+(?=\d)/,'')||'0').replace(/\B(?=(\d{3})+(?!\d))/g,'.');};
@@ -89,7 +89,30 @@
 
   async function printNota(id){try{const u=await user();const {data,error}=await SB().from('operational_transactions').select('*').eq('id',id).eq('user_id',u.id).single();if(error)throw error;const kind=data.kind==='pemasukan'?'PEMASUKAN OPERASIONAL':'PENGELUARAN OPERASIONAL';const html='<!doctype html><html><head><meta charset="utf-8"><title>Nota '+esc(data.reference_no)+'</title><style>@page{size:A5 portrait;margin:10mm}body{font-family:Arial,sans-serif;color:#172018;margin:0}.head{text-align:center;border-bottom:2px solid #14532d;padding-bottom:10px}.logo{width:48px;height:48px;border-radius:50%;background:#14532d;color:#fff;display:flex;align-items:center;justify-content:center;margin:auto;font-weight:900;font-size:17px}.brand{font-size:19px;font-weight:900;color:#14532d;margin-top:6px}.sub{font-size:10px;color:#666}.box{border:1px solid #ddd;border-radius:8px;padding:10px;margin-top:12px}.row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:11px}.label{color:#666}.value{font-weight:800;text-align:right}.total{border-top:1px solid #ddd;margin-top:7px;padding-top:8px;font-size:14px}.sign{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:28px;text-align:center;font-size:10px}.line{border-top:1px solid #aaa;margin-top:32px;padding-top:5px}.foot{text-align:center;margin-top:18px;padding-top:8px;border-top:1px dashed #bbb;font-size:9px;color:#777}</style></head><body><div class="head"><div class="logo">BT</div><div class="brand">BAROKAH TELUR</div><div class="sub">'+kind+'</div></div><div class="box"><div class="row"><span class="label">No. Transaksi</span><span class="value">'+esc(data.reference_no||'-')+'</span></div><div class="row"><span class="label">Tanggal</span><span class="value">'+esc(data.transaction_date)+'</span></div><div class="row"><span class="label">Kategori</span><span class="value">'+esc(data.category)+'</span></div><div class="row"><span class="label">Keterangan</span><span class="value">'+esc(data.description)+'</span></div><div class="row total"><span class="label">Nominal</span><span class="value">'+fmt(data.amount)+'</span></div></div>'+(data.note?'<div class="box"><b>Catatan</b><br>'+esc(data.note)+'</div>':'')+'<div class="sign"><div><div class="line">Dibuat / Diterima</div></div><div><div class="line">Barokah Telur</div></div></div><div class="foot">Nota Transaksi Operasional • '+new Date().toLocaleString('id-ID')+'</div></body></html>';let f=document.getElementById('barokahOperationalPrintFrame');if(f)f.remove();f=document.createElement('iframe');f.id='barokahOperationalPrintFrame';Object.assign(f.style,{position:'fixed',width:'1px',height:'1px',right:'0',bottom:'0',border:'0',opacity:'0',pointerEvents:'none'});document.body.appendChild(f);f.onload=()=>setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){alert('Cetak nota gagal: '+e.message)}finally{setTimeout(()=>f.remove(),1500)}},250);f.srcdoc=html;}catch(e){alert('Gagal membuat nota: '+(e.message||e));}}
 
-  function printList(){const list=rows.filter(x=>filter==='semua'||x.kind===filter);const body=list.map(r=>'<tr><td>'+esc(r.reference_no||'-')+'</td><td>'+esc(r.transaction_date)+'</td><td>'+esc(r.kind)+'</td><td>'+esc(r.category)+'</td><td>'+esc(r.description)+'</td><td>'+fmt(r.amount)+'</td></tr>').join('');const html='<!doctype html><html><head><meta charset="utf-8"><title>Transaksi Operasional - Barokah Telur</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;color:#172018}h1{font-size:22px}p{font-size:12px;color:#666}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f1f4f1}</style></head><body><h1>BAROKAH TELUR</h1><h2>Transaksi Operasional</h2><p>Dicetak '+new Date().toLocaleString('id-ID')+'</p><table><thead><tr><th>No. Transaksi</th><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>'+body+'</tbody></table></body></html>';let f=document.getElementById('barokahOperationalListPrintFrame');if(f)f.remove();f=document.createElement('iframe');f.id='barokahOperationalListPrintFrame';Object.assign(f.style,{position:'fixed',width:'1px',height:'1px',right:'0',bottom:'0',border:'0',opacity:'0',pointerEvents:'none'});document.body.appendChild(f);f.onload=()=>setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}finally{setTimeout(()=>f.remove(),1200)}},200);f.srcdoc=html;}
+  async function printList(){
+    let printTab=null;
+    try{
+      // Open the print target immediately from the button click so mobile browsers
+      // do not treat it as a delayed popup after the Supabase request.
+      printTab=window.open('', '_blank');
+      if(!printTab)throw new Error('Popup diblokir browser. Izinkan pop-up untuk situs ini lalu tekan Cetak lagi.');
+      printTab.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Menyiapkan laporan...</title></head><body style="font-family:Arial;padding:30px">Menyiapkan laporan operasional...</body></html>');
+      printTab.document.close();
+
+      const u=await user();
+      const {data,error}=await SB().from('operational_transactions').select('*').eq('user_id',u.id).order('transaction_date',{ascending:false}).order('created_at',{ascending:false});
+      if(error)throw error;
+      const list=data||[];
+      const body=list.length?list.map(r=>'<tr><td>'+esc(r.reference_no||'-')+'</td><td>'+esc(r.transaction_date)+'</td><td>'+esc(r.kind==='pemasukan'?'Pemasukan':'Pengeluaran')+'</td><td>'+esc(r.category)+'</td><td>'+esc(r.description)+'</td><td>'+fmt(r.amount)+'</td></tr>').join(''):'<tr><td colspan="6" style="text-align:center">Belum ada transaksi operasional.</td></tr>';
+      const html='<!doctype html><html><head><meta charset="utf-8"><title>Transaksi Operasional - Barokah Telur</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;color:#172018}h1{font-size:22px;margin-bottom:4px}h2{font-size:17px;margin:0 0 6px}p{font-size:12px;color:#666}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f1f4f1}tfoot td{font-weight:800}</style></head><body><h1>BAROKAH TELUR</h1><h2>Transaksi Operasional</h2><p>Semua data operasional • Dicetak ${new Date().toLocaleString('id-ID')}</p><table><thead><tr><th>No. Transaksi</th><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>${body}</tbody></table><script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print();},300);});<\/script></body></html>';
+      printTab.document.open();
+      printTab.document.write(html);
+      printTab.document.close();
+    }catch(e){
+      if(printTab&&!printTab.closed)printTab.close();
+      alert('Gagal mencetak laporan operasional: '+(e.message||e));
+    }
+  }
 
   async function init(){styles();page();nav();await dashboard();setInterval(()=>dashboard(),30000);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,500));else setTimeout(init,500);
