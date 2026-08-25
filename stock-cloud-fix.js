@@ -24,7 +24,11 @@
     const text=String(node.textContent||'').replace(/\s+/g,' ').trim();
     const looksLikeStock=text.includes('Riwayat Stok Gudang') || text.includes('Semua perubahan stok tercatat otomatis');
     if(!looksLikeStock)return;
-    if(node.closest('#page-operational'))return;
+    if(node.closest('#page-operational')){
+      node.style.setProperty('display','none','important');
+      node.setAttribute('data-stock-orphan-hidden','1');
+      return;
+    }
     node.style.setProperty('display','none','important');
     node.setAttribute('data-stock-orphan-hidden','1');
   }
