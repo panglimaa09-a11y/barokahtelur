@@ -1,14 +1,14 @@
 (function(){
   'use strict';
   const SB=()=>window.barokahSupabase;
-  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const esc=v=>String(v==null?'':v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
   const today=()=>new Date().toISOString().slice(0,10);
   let syncing=false;
 
   function css(){
     if(document.getElementById('barokahDebtUnitCss'))return;
     const s=document.createElement('style');s.id='barokahDebtUnitCss';
-    s.textContent='.debt-unit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;grid-column:1/-1}.debt-unit-grid .debt-field{grid-column:auto}@media(max-width:600px){.debt-unit-grid{grid-template-columns:1fr}}.debt-unit-badge{font-weight:800;color:#14532d}.debt-qty-cell{white-space:nowrap}';
+    s.textContent='.debt-unit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;grid-column:1/-1}.debt-unit-grid .debt-field{grid-column:auto}@media(max-width:600px){.debt-unit-grid{grid-template-columns:1fr}}.debt-unit-badge{font-weight:800;color:#14532d}.debt-qty-cell{white-space:nowrap}.debt-save-error{margin-top:10px;padding:10px 12px;border-radius:10px;background:#fff0ee;color:#9f241d;font-size:12px;line-height:1.5}';
     document.head.appendChild(s);
   }
 
@@ -16,6 +16,13 @@
     const sb=SB(); if(!sb) throw new Error('Supabase belum siap.');
     const {data,error}=await sb.auth.getUser(); if(error)throw error;
     if(!data.user)throw new Error('Sesi login tidak aktif.'); return data.user;
+  }
+
+  function numberValue(value){
+    const raw=String(value==null?'':value).trim();
+    if(!raw)return 0;
+    const digits=raw.replace(/\D/g,'');
+    return digits?Number(digits):0;
   }
 
   function installForm(){
@@ -33,25 +40,53 @@
     return true;
   }
 
+  function showSaveError(message){
+    console.error('[Barokah Telur] Gagal menyimpan utang/piutang:',message);
+    const form=document.getElementById('debtForm');
+    if(form){
+      let box=document.getElementById('debtSaveError');
+      if(!box){box=document.createElement('div');box.id='debtSaveError';box.className='debt-save-error';form.appendChild(box);}
+      box.textContent='Gagal menyimpan ke Supabase: '+message;
+    }
+    alert('Gagal menyimpan: '+message);
+  }
+
+  async function insertDebt(payload){
+    const first=await SB().from('debts_receivables').insert(payload);
+    if(!first.error)return;
+    const msg=String(first.error.message||first.error.details||'');
+    const missingUnit=/quantity|unit|schema cache|PGRST204/i.test(msg);
+    if(!missingUnit)throw first.error;
+    // Fallback keeps saving functional when the deployed PostgREST schema has
+    // not refreshed the optional quantity/unit columns yet.
+    const base={...payload};delete base.quantity;delete base.unit;
+    const retry=await SB().from('debts_receivables').insert(base);
+    if(retry.error)throw retry.error;
+  }
+
   async function saveWithUnit(ev){
     ev.preventDefault();ev.stopImmediatePropagation();
     if(syncing)return; syncing=true;
+    const submit=ev.submitter||document.querySelector('#debtForm button[type="submit"]');
+    if(submit){submit.disabled=true;submit.dataset.oldText=submit.textContent;submit.textContent='Menyimpan...';}
     try{
       const u=await getUser();
-      const kind=document.getElementById('debtKind')?.value;
-      const party=document.getElementById('debtParty')?.value.trim();
-      const total=Number(document.getElementById('debtTotal')?.value);
-      const paid=Number(document.getElementById('debtPaid')?.value||0);
-      const quantity=Number(document.getElementById('debtQuantity')?.value||0);
-      const unit=(document.getElementById('debtUnit')?.value||'').trim()||'Paket';
-      if(!party||!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total||!Number.isFinite(quantity)||quantity<=0){alert('Periksa nama, jumlah, total, dan pembayaran.');return;}
+      const kind=document.getElementById('debtKind')?.value||'piutang';
+      const party=(document.getElementById('debtParty')?.value||document.getElementById('debtName')?.value||'').trim();
+      const total=numberValue(document.getElementById('debtTotal')?.value);
+      const paid=numberValue(document.getElementById('debtPaid')?.value||0);
+      const quantity=Number(document.getElementById('debtQuantity')?.value||document.getElementById('debtQty')?.value||1);
+      const unit=(document.getElementById('debtUnit')?.value||'Paket').trim()||'Paket';
+      if(!party||total<=0||!Number.isFinite(total)||paid<0||paid>total||!Number.isFinite(paid)||!Number.isFinite(quantity)||quantity<=0){showSaveError('Periksa nama, jumlah, total, dan pembayaran.');return;}
       const payload={user_id:u.id,kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:party,phone:document.getElementById('debtPhone')?.value.trim()||'',reference_no:document.getElementById('debtRef')?.value.trim()||'',debt_date:document.getElementById('debtDate')?.value||today(),due_date:document.getElementById('debtDue')?.value||null,total_amount:total,paid_amount:paid,quantity,unit,note:document.getElementById('debtNote')?.value.trim()||''};
-      const {error}=await SB().from('debts_receivables').insert(payload);if(error)throw error;
-      const f=document.getElementById('debtForm');if(f)f.reset();const d=document.getElementById('debtDate');if(d)d.value=today();const q=document.getElementById('debtQuantity');if(q)q.value='1';const un=document.getElementById('debtUnit');if(un)un.value='Paket';
+      await insertDebt(payload);
+      const f=document.getElementById('debtForm');if(f)f.reset();const d=document.getElementById('debtDate');if(d)d.value=today();const q=document.getElementById('debtQuantity');if(q)q.value='1';const q2=document.getElementById('debtQty');if(q2)q2.value='1';const un=document.getElementById('debtUnit');if(un)un.value='Paket';
+      document.getElementById('debtSaveError')?.remove();
+      document.dispatchEvent(new CustomEvent('barokah:debt-changed'));
       document.getElementById('debtNavBtn')?.click();
       alert('Utang/piutang berhasil disimpan.');
-    }catch(e){alert('Gagal menyimpan: '+(e.message||e));}
-    finally{syncing=false;}
+    }catch(e){showSaveError(e.message||e.details||e.hint||e);}
+    finally{syncing=false;if(submit){submit.disabled=false;submit.textContent=submit.dataset.oldText||'Simpan';}}
   }
 
   async function decorateTable(){
