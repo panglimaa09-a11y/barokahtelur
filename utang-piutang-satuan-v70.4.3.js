@@ -1,24 +1,11 @@
 (function(){
   'use strict';
-
   const SB=()=>window.barokahSupabase;
   const today=()=>new Date().toISOString().slice(0,10);
-  let saving=false;
+  const esc=v=>String(v==null?'':v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
+  let debtPatched=false;
 
-  function el(...ids){
-    for(const id of ids){const node=document.getElementById(id);if(node)return node;}
-    return null;
-  }
-
-  // Accept raw numbers and Indonesian UI formats such as 50.000 / Rp 50.000.
-  function numberValue(value){
-    const raw=String(value==null?'':value).trim();
-    if(!raw)return 0;
-    const digits=raw.replace(/\D/g,'');
-    return digits?Number(digits):0;
-  }
-
-  async function getUser(){
+  async function user(){
     const sb=SB();
     if(!sb)throw new Error('Supabase belum siap.');
     const {data,error}=await sb.auth.getUser();
@@ -27,75 +14,145 @@
     return data.user;
   }
 
+  function removeDueDateUI(){
+    const form=document.getElementById('debtForm');
+    if(form){
+      const due=document.getElementById('debtDue');
+      if(due){
+        const field=due.closest('.debt-field');
+        if(field)field.remove();
+      }
+    }
+    const table=document.getElementById('debtTable');
+    if(table){
+      const t=table.querySelector('table');
+      if(t){
+        const head=t.querySelector('thead tr');
+        if(head){
+          [...head.children].forEach((th,i)=>{if((th.textContent||'').trim().toLowerCase()==='jatuh tempo')th.remove();});
+        }
+        t.querySelectorAll('tbody tr').forEach(tr=>{
+          const cells=[...tr.children];
+          if(cells.length>=8){
+            const idx=cells.findIndex(td=>td.dataset.removedDue==='1');
+            if(idx>=0)return;
+            if(cells.length===9)cells[6]?.remove();
+          }
+        });
+      }
+    }
+  }
+
   async function saveDebt(ev){
     ev.preventDefault();
     ev.stopImmediatePropagation();
-    if(saving)return;
-    saving=true;
-
     try{
-      const u=await getUser();
-      const kind=el('debtKind')?.value||'piutang';
-      const party=(el('debtParty','debtName')?.value||'').trim();
-      const total=numberValue(el('debtTotal')?.value);
-      const paid=numberValue(el('debtPaid')?.value);
-      const quantity=Number(el('debtQty','debtQuantity')?.value||1);
-      const unit=(el('debtUnit')?.value||'Paket').trim()||'Paket';
-
-      if(!party||total<=0||!Number.isFinite(total)||paid<0||paid>total||!Number.isFinite(paid)||!Number.isFinite(quantity)||quantity<=0){
+      const u=await user();
+      const kind=document.getElementById('debtKind')?.value||'piutang';
+      const party=document.getElementById('debtParty')?.value.trim();
+      const total=Number(document.getElementById('debtTotal')?.value||0);
+      const paid=Number(document.getElementById('debtPaid')?.value||0);
+      const quantity=Number(document.getElementById('debtQuantity')?.value||1);
+      const unit=(document.getElementById('debtUnit')?.value||'Paket').trim()||'Paket';
+      if(!party||!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total||!Number.isFinite(quantity)||quantity<=0){
         alert('Periksa nama, jumlah, total, dan pembayaran.');
         return;
       }
-
       const payload={
         user_id:u.id,
         kind,
         party_type:kind==='piutang'?'pelanggan':'supplier',
         party_name:party,
-        phone:(el('debtPhone')?.value||'').trim(),
-        reference_no:(el('debtRef')?.value||'').trim(),
-        debt_date:el('debtDate')?.value||today(),
-        due_date:el('debtDue')?.value||null,
+        phone:document.getElementById('debtPhone')?.value.trim()||'',
+        reference_no:document.getElementById('debtRef')?.value.trim()||'',
+        debt_date:document.getElementById('debtDate')?.value||today(),
         total_amount:total,
         paid_amount:paid,
         quantity,
         unit,
-        note:(el('debtNote')?.value||'').trim()
+        note:document.getElementById('debtNote')?.value.trim()||''
       };
-
       const {error}=await SB().from('debts_receivables').insert(payload);
       if(error)throw error;
-
       const form=document.getElementById('debtForm');
       if(form)form.reset();
-      const date=el('debtDate');if(date)date.value=today();
-      const paidEl=el('debtPaid');if(paidEl)paidEl.value='0';
-      const qty=el('debtQty','debtQuantity');if(qty)qty.value='1';
-      const unitEl=el('debtUnit');if(unitEl)unitEl.value='Paket';
-
-      document.dispatchEvent(new CustomEvent('barokah:debt-changed'));
+      const date=document.getElementById('debtDate');if(date)date.value=today();
+      const q=document.getElementById('debtQuantity');if(q)q.value='1';
+      const un=document.getElementById('debtUnit');if(un)un.value='Paket';
+      removeDueDateUI();
+      document.getElementById('debtNavBtn')?.click();
+      setTimeout(removeDueDateUI,200);
       alert('Utang/piutang berhasil disimpan.');
-    }catch(e){
-      alert('Gagal menyimpan: '+(e.message||e));
-    }finally{
-      saving=false;
+    }catch(e){alert('Gagal menyimpan: '+(e.message||e));}
+  }
+
+  function patchDebtForm(){
+    const form=document.getElementById('debtForm');
+    if(!form)return false;
+    if(form.dataset.finalFix==='1'){
+      removeDueDateUI();
+      return true;
+    }
+    const clone=form.cloneNode(true);
+    clone.dataset.finalFix='1';
+    form.replaceWith(clone);
+    clone.addEventListener('submit',saveDebt);
+    removeDueDateUI();
+    debtPatched=true;
+    return true;
+  }
+
+  function cleanDebtEditModal(){
+    const due=document.getElementById('b44Due');
+    if(due){
+      due.value='';
+      const field=due.closest('.b44-field');
+      if(field)field.style.display='none';
+    }
+    const help=document.querySelector('.b44-help');
+    if(help && /Jatuh Tempo|jatuh tempo/i.test(help.textContent||'')){
+      help.textContent='Edit ini mengubah data utama catatan. Riwayat pembayaran tetap tersimpan.';
     }
   }
 
-  function install(){
-    const form=document.getElementById('debtForm');
-    if(!form||form.dataset.unitSaveFix==='1')return;
-    form.addEventListener('submit',saveDebt,true);
-    form.dataset.unitSaveFix='1';
+  function patchStockEditModal(){
+    const modal=document.getElementById('stockIntegratedModal53');
+    if(!modal)return;
+    const unit=document.getElementById('stock53Unit');
+    if(unit && unit.dataset.finalFix!=='1'){
+      unit.dataset.finalFix='1';
+      unit.placeholder='Kg / Papan / Ikat';
+      unit.addEventListener('input',function(){
+        if(/^butir$/i.test(unit.value.trim())){
+          unit.value='';
+          const err=document.getElementById('stock53Error');
+          if(err)err.textContent='Satuan Butir tidak digunakan. Gunakan Kg, Papan, atau Ikat.';
+        }
+      });
+    }
   }
 
-  function boot(){install();}
+  function boot(){
+    patchDebtForm();
+    removeDueDateUI();
+    cleanDebtEditModal();
+    patchStockEditModal();
+  }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
-  else boot();
+  const observer=new MutationObserver(function(){
+    if(!debtPatched)patchDebtForm();
+    removeDueDateUI();
+    cleanDebtEditModal();
+    patchStockEditModal();
+  });
 
-  // Other legacy preview fixes may replace the dynamic debt form. Rebind only
-  // to the replacement; never alter the production branch or other modules.
-  const observer=new MutationObserver(()=>install());
-  if(document.body)observer.observe(document.body,{childList:true,subtree:true});
+  function start(){
+    boot();
+    observer.observe(document.body,{childList:true,subtree:true});
+    setInterval(boot,1500);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
+  window.addEventListener('barokah:supabase-ready',()=>setTimeout(boot,300));
 })();
