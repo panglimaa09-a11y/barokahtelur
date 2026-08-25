@@ -18,31 +18,79 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
+
+          # Keep the existing report-print loader safely installed.
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
           tag = '<script src="print-report-fix.js"></script>'
-
-          # Remove any previous accidental insertion, including one that may
-          # have landed inside a generated print HTML string.
           s = s.replace(tag, '')
-
           marker = '</body>'
           pos = s.rfind(marker)
           if pos < 0:
               raise SystemExit('index.html tidak memiliki </body>')
-
           s = s[:pos] + tag + '\n' + s[pos:]
           p.write_text(s, encoding='utf-8')
-          print('Print report fix installed immediately before the final </body>.')
+
+          # Repair only the Operational print handler. Other Operational
+          # features and all other modules remain untouched.
+          op = Path('operasional.js')
+          src = op.read_text(encoding='utf-8')
+          new_func = r'''  async function printList(){
+    try{
+      // Use the already-rendered operational dataset so print matches the
+      // data currently visible on screen and does not lose rows.
+      let list=Array.isArray(rows)?rows.slice():[];
+      if(!list.length){
+        const u=await user();
+        const {data,error}=await SB().from('operational_transactions').select('*').eq('user_id',u.id).order('transaction_date',{ascending:false}).order('created_at',{ascending:false});
+        if(error)throw error;
+        list=data||[];
+      }
+
+      const body=list.length?list.map(r=>'<tr><td>'+esc(r.reference_no||'-')+'</td><td>'+esc(r.transaction_date||'-')+'</td><td>'+esc(r.kind==='pemasukan'?'Pemasukan':'Pengeluaran')+'</td><td>'+esc(r.category||'-')+'</td><td>'+esc(r.description||'-')+(r.note?'<div class="note">'+esc(r.note)+'</div>':'')+'</td><td class="money">'+fmt(r.amount)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">Belum ada transaksi operasional.</td></tr>';
+
+      const html='<!doctype html><html><head><meta charset="utf-8"><title>Transaksi Operasional - Barokah Telur</title><style>@page{size:A4 landscape;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;padding:0;background:#fff;color:#172018;font-family:Arial,sans-serif}body{font-size:10px}.head{border-bottom:2px solid #14532d;padding:0 0 8px;margin:0 0 10px}.brand{font-size:20px;font-weight:900;color:#14532d}.title{font-size:15px;font-weight:800;margin-top:2px}.date{font-size:9px;color:#666;margin-top:4px}table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}th,td{border:1px solid #d9dedb;padding:5px 6px;vertical-align:top;text-align:left;line-height:1.25}th{background:#14532d;color:#fff;font-size:9px}td{font-size:9px}th:nth-child(1),td:nth-child(1){width:13%}th:nth-child(2),td:nth-child(2){width:10%}th:nth-child(3),td:nth-child(3){width:12%}th:nth-child(4),td:nth-child(4){width:13%}th:nth-child(5),td:nth-child(5){width:37%}th:nth-child(6),td:nth-child(6){width:15%;text-align:right}.money{font-weight:800}.note{margin-top:2px;color:#666;font-size:8px}.empty{text-align:center;color:#777;padding:14px}.foot{margin-top:8px;font-size:8px;color:#777;text-align:right}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="head"><div class="brand">BAROKAH TELUR</div><div class="title">Transaksi Operasional</div><div class="date">Semua data operasional • Dicetak '+esc(new Date().toLocaleString('id-ID'))+'</div></div><table><thead><tr><th>No. Transaksi</th><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>'+body+'</tbody></table><div class="foot">Total catatan: '+list.length+'</div></body></html>';
+
+      let frame=document.getElementById('barokahOperationalPrintFrame');
+      if(frame)frame.remove();
+      frame=document.createElement('iframe');
+      frame.id='barokahOperationalPrintFrame';
+      frame.setAttribute('aria-hidden','true');
+      frame.style.cssText='position:fixed;left:-10000px;top:0;width:0;height:0;border:0;visibility:hidden';
+      document.body.appendChild(frame);
+
+      let cleaned=false;
+      const cleanup=()=>{if(cleaned)return;cleaned=true;setTimeout(()=>{if(frame&&frame.parentNode)frame.remove();},1500);};
+      frame.onload=()=>{
+        setTimeout(()=>{
+          try{frame.contentWindow.focus();frame.contentWindow.print();}
+          catch(e){cleanup();alert('Cetak laporan gagal: '+(e.message||e));return;}
+          cleanup();
+        },250);
+      };
+      frame.srcdoc=html;
+    }catch(e){
+      alert('Gagal mencetak laporan operasional: '+(e.message||e));
+    }
+  }
+'''
+          pattern = r'  async function printList\(\)\{[\s\S]*?\n  \}\n\n  async function init\(\)\{'
+          replacement = new_func + '\n  async function init(){'
+          patched, count = re.subn(pattern, replacement, src, count=1)
+          if count != 1:
+              raise SystemExit('Fungsi printList() tidak ditemukan secara aman.')
+          op.write_text(patched, encoding='utf-8')
+          print('Operational printList() repaired with all-data rendering and isolated print iframe.')
 
       - name: Commit generated change
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html operasional.js
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "fix: place print report fix safely"
+            git commit -m "fix: repair operational print layout and data sync [skip ci]"
             git push
           fi
