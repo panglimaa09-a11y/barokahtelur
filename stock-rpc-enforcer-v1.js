@@ -43,8 +43,7 @@
     return true;
   }
 
-  window.__barokahStockRpcEnforcer={deleteOne,clearAll};
-  window.deleteStockMovement=async function(id){
+  async function safeDeleteHandler(id){
     if(!confirm('Hapus riwayat stok ini? Data yang dihapus tidak bisa dikembalikan dari aplikasi.'))return;
     try{
       await deleteOne(id);
@@ -52,31 +51,60 @@
       if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
       if(typeof window.toast==='function')window.toast('Riwayat stok berhasil dihapus.');
     }catch(e){console.error('[STOCK RPC ENFORCER DELETE]',e);alert('Gagal menghapus stok: '+(e.message||e));}
-  };
-  window.clearStockHistory=async function(){
+  }
+
+  async function safeClearHandler(){
     try{await clearAll();}
     catch(e){console.error('[STOCK RPC ENFORCER CLEAR]',e);alert('Gagal menghapus riwayat stok: '+(e.message||e));}
-  };
+  }
 
-  // This capture handler runs before legacy shared-stock-sync listeners.
-  // It prevents legacy .delete() calls from ever reaching Supabase.
+  // Expose canonical RPC handlers. Re-assert them because index.html and older modules
+  // also define these globals and can overwrite them during page initialization.
+  function installGlobals(){
+    window.__barokahStockRpcEnforcer={deleteOne,clearAll};
+    window.deleteStockMovement=safeDeleteHandler;
+    window.clearStockHistory=safeClearHandler;
+  }
+  installGlobals();
+  setTimeout(installGlobals,500);
+  setTimeout(installGlobals,1500);
+  setTimeout(installGlobals,3000);
+
+  // Capture BEFORE legacy document handlers. Any stock delete button is routed to RPC.
+  // Bulk-clear detection intentionally does not depend on an id or onclick attribute,
+  // because the legacy clear button can be wired by an inline/local handler.
   document.addEventListener('click',function(e){
-    const del=e.target.closest?.('[data-stock-delete],.stock-action-delete,.stock53-delete');
+    const el=e.target?.closest?.('button,a,[role="button"]');
+    if(!el)return;
+    const text=String(el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    const del=el.closest?.('[data-stock-delete],.stock-action-delete,.stock53-delete')||
+      (el.matches?.('[data-stock-delete],.stock-action-delete,.stock53-delete')?el:null);
+    const bulk=el.closest?.('[data-stock-clear],#clearStockHistoryBtn,#clearStockBtn')||
+      (el.matches?.('[data-stock-clear],#clearStockHistoryBtn,#clearStockBtn')?el:null)||
+      (/hapus\s+seluruh\s+riwayat\s+stok/.test(text)||/reset\s+stok\s+gudang/.test(text));
+
     if(del){
       e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
       if(del.dataset.rpcEnforcerBusy==='1')return;
       del.dataset.rpcEnforcerBusy='1';
-      Promise.resolve(window.deleteStockMovement(del.getAttribute('data-stock-delete')||del.getAttribute('data-id'))).finally(()=>{del.dataset.rpcEnforcerBusy='0';});
+      const id=del.getAttribute('data-stock-delete')||del.getAttribute('data-id');
+      Promise.resolve(safeDeleteHandler(id)).finally(()=>{del.dataset.rpcEnforcerBusy='0';});
       return;
     }
-    const clearBtn=e.target.closest?.('[onclick*="clearStockHistory"],[data-stock-clear],#clearStockHistoryBtn,#clearStockBtn');
-    if(clearBtn){
+    if(bulk){
       e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-      if(clearBtn.dataset.rpcEnforcerBusy==='1')return;
-      clearBtn.dataset.rpcEnforcerBusy='1';
-      Promise.resolve(window.clearStockHistory()).finally(()=>{clearBtn.dataset.rpcEnforcerBusy='0';});
+      if(el.dataset.rpcEnforcerBusy==='1')return;
+      el.dataset.rpcEnforcerBusy='1';
+      Promise.resolve(safeClearHandler()).finally(()=>{el.dataset.rpcEnforcerBusy='0';});
     }
   },true);
 
-  console.log('[Barokah] Stock RPC Enforcer v1 active — legacy stock DELETE disabled.');
+  // If a legacy module reassigns the global later, restore the canonical handlers.
+  if(window.MutationObserver){
+    const observer=new MutationObserver(()=>installGlobals());
+    observer.observe(document.documentElement||document,{childList:true,subtree:true});
+    setTimeout(()=>observer.disconnect(),10000);
+  }
+
+  console.log('[Barokah] Stock RPC Enforcer v2 active — legacy stock DELETE disabled.');
 })();
