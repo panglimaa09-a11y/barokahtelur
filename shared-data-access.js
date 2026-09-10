@@ -2,7 +2,7 @@
   'use strict';
   const getClient=()=>window.barokahSupabase;
   let adminCache={value:false,expires:0,pending:null};
-  const SHARED_TABLES=new Set(['transactions','stock_movements','transaction_proofs','debts_receivables']);
+  const SHARED_TABLES=new Set(['transactions','stock_movements','transaction_proofs','debts_receivables','debt_payments','operational_transactions']);
   async function isAdmin(){
     const now=Date.now();
     if(now<adminCache.expires)return adminCache.value;
