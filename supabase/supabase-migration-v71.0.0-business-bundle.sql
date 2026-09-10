@@ -1,5 +1,5 @@
--- BAROKAH TELUR V71.0.0
--- Business bundle: transaction + warehouse movement + transfer proof metadata.
+-- BAROKAH TELUR V71.0.1
+-- Shared business bundle: transaction + warehouse movement + transfer proof metadata.
 -- One client-generated transaction UUID is the bundle UUID.
 -- Run once in Supabase SQL Editor.
 
@@ -11,6 +11,8 @@ create index if not exists stock_movements_transaction_idx
   on public.stock_movements(transaction_id, created_at);
 create index if not exists transactions_id_user_idx
   on public.transactions(id, user_id);
+create index if not exists transaction_proofs_transaction_idx
+  on public.transaction_proofs(transaction_id, created_at);
 
 -- Shared business access for authenticated admin/owner accounts. Profile/account data stays private.
 DROP POLICY IF EXISTS transactions_select_shared_admin ON public.transactions;
@@ -40,13 +42,30 @@ CREATE POLICY transaction_proofs_insert_shared_admin ON public.transaction_proof
 CREATE POLICY transaction_proofs_update_shared_admin ON public.transaction_proofs FOR UPDATE TO authenticated USING (auth.uid() = user_id OR public.is_admin()) WITH CHECK (auth.uid() = user_id OR public.is_admin());
 CREATE POLICY transaction_proofs_delete_shared_admin ON public.transaction_proofs FOR DELETE TO authenticated USING (auth.uid() = user_id OR public.is_admin());
 
--- Storage access for admins so Owner B can view Owner A's proof image through a signed URL.
+-- Storage access: either the owner folder or any admin can read/delete proof images.
 DROP POLICY IF EXISTS bukti_transfer_select_shared_admin ON storage.objects;
 DROP POLICY IF EXISTS bukti_transfer_delete_shared_admin ON storage.objects;
 CREATE POLICY bukti_transfer_select_shared_admin ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id='bukti-transfer' AND ((storage.foldername(name))[1]=(select auth.uid()::text) OR public.is_admin()));
 CREATE POLICY bukti_transfer_delete_shared_admin ON storage.objects FOR DELETE TO authenticated
   USING (bucket_id='bukti-transfer' AND ((storage.foldername(name))[1]=(select auth.uid()::text) OR public.is_admin()));
+
+-- Explicit shared-proof RPCs. These avoid the browser-side user_id filter entirely.
+drop function if exists public.list_shared_transaction_proofs(uuid);
+create or replace function public.list_shared_transaction_proofs(p_transaction_id uuid)
+returns setof public.transaction_proofs
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select tp.*
+  from public.transaction_proofs tp
+  join public.transactions t on t.id=tp.transaction_id
+  where tp.transaction_id=p_transaction_id
+    and public.is_admin();
+$$;
+grant execute on function public.list_shared_transaction_proofs(uuid) to authenticated;
 
 -- DB transaction is atomic. Storage bytes are uploaded first; if this RPC fails, the browser removes them.
 drop function if exists public.save_business_bundle(text,text,numeric,text,numeric,numeric,date,jsonb,jsonb,uuid);
@@ -83,13 +102,10 @@ begin
   if p_qty is null or p_qty<=0 then raise exception 'Jumlah transaksi harus lebih dari 0.'; end if;
   if p_price is null or p_price<0 then raise exception 'Harga transaksi tidak valid.'; end if;
   if p_transaction_date is null then raise exception 'Tanggal transaksi wajib diisi.'; end if;
-
   perform pg_advisory_xact_lock(hashtext('barokah_telur_warehouse_bundle'));
-
   insert into public.transactions(id,user_id,type,note,price,unit,qty,total,transaction_date)
   values(v_txid,v_user,p_type,p_note,p_price,p_unit,p_qty,coalesce(p_total,round(p_price*p_qty,3)),p_transaction_date)
   returning * into v_tx;
-
   v_current := coalesce((select sum(delta_butir) from public.stock_movements where product='Telur Ayam Ras'),0);
   if jsonb_typeof(coalesce(p_stock,'null'::jsonb))='object' then
     v_stock:=p_stock;
@@ -101,20 +117,17 @@ begin
       values(v_user,'Telur Ayam Ras',coalesce(v_stock->>'movement_type',case when v_delta>0 then 'Masuk' else 'Keluar' end),coalesce((v_stock->>'qty')::numeric,abs(v_delta)),coalesce(v_stock->>'unit','Butir'),v_delta,v_after,coalesce(v_stock->>'note',''),v_tx.id);
     end if;
   end if;
-
   if jsonb_typeof(coalesce(p_proofs,'[]'::jsonb))='array' then
     for v_proof in select value from jsonb_array_elements(p_proofs) loop
       insert into public.transaction_proofs(user_id,transaction_id,storage_path,file_name,mime_type,file_size)
       values(v_user,v_tx.id,v_proof->>'storage_path',coalesce(v_proof->>'file_name','Bukti Transfer'),v_proof->>'mime_type',(v_proof->>'file_size')::bigint);
     end loop;
   end if;
-
   return jsonb_build_object('transaction',to_jsonb(v_tx),'transaction_id',v_tx.id,
     'stock',coalesce((select to_jsonb(sm) from public.stock_movements sm where sm.transaction_id=v_tx.id order by sm.created_at desc limit 1),'null'::jsonb),
     'proof_count',(select count(*) from public.transaction_proofs where transaction_id=v_tx.id));
 end;
 $$;
-
 grant execute on function public.save_business_bundle(text,text,numeric,text,numeric,numeric,date,jsonb,jsonb,uuid) to authenticated;
 
 drop view if exists public.business_transaction_bundles;
@@ -125,4 +138,4 @@ select t.id as transaction_id,t.user_id,t.type,t.note,t.price,t.unit,t.qty,t.tot
 from public.transactions t left join public.stock_movements sm on sm.transaction_id=t.id;
 
 comment on function public.save_business_bundle(text,text,numeric,text,numeric,numeric,date,jsonb,jsonb,uuid)
-is 'V71: atomic DB save of one business bundle: transaction + optional stock movement + optional proof metadata.';
+is 'V71.0.1: atomic DB save of one business bundle: transaction + optional stock movement + optional proof metadata.';
