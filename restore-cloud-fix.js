@@ -48,6 +48,15 @@
     s.onerror=function(){console.error('Gagal memuat bukti-transfer-supabase.js');};
     document.head.appendChild(s);
   }
-  function bootModules(){setTimeout(loadDebtModule,300);setTimeout(loadProfileModule,450);setTimeout(loadProofTransferModule,550);}
+  function loadSharedAdminModule(){
+    if(document.querySelector('script[data-barokah-shared-admin]'))return;
+    var s=document.createElement('script');
+    s.src='shared-admin-sync.js?v=1';
+    s.dataset.barokahSharedAdmin='1';
+    s.onload=function(){console.log('Barokah Shared Admin Sync loaded');};
+    s.onerror=function(){console.error('Gagal memuat shared-admin-sync.js');};
+    document.head.appendChild(s);
+  }
+  function bootModules(){setTimeout(loadDebtModule,300);setTimeout(loadProfileModule,450);setTimeout(loadProofTransferModule,550);setTimeout(loadSharedAdminModule,700);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootModules);else bootModules();
 })();
