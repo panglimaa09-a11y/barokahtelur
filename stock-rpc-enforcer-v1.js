@@ -19,42 +19,17 @@
     return r.data;
   }
 
-  async function clearAll(){
-    const sb=SB();
-    await getUser();
-    if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return false;
-    // Snapshot IDs first. Every deletion goes through the canonical RPC,
-    // so the ledger is recalculated after each removal and the old REST DELETE
-    // path is never used.
-    const r=await sb.from('stock_movements').select('id').order('created_at',{ascending:true}).order('id',{ascending:true});
-    if(r.error)throw r.error;
-    const ids=(r.data||[]).map(x=>String(x.id)).filter(x=>UUID.test(x));
-    for(const id of ids){
-      try{await deleteOne(id);}
-      catch(e){
-        // A historical ledger may become temporarily invalid when deleting
-        // an earlier movement. For bulk reset, delete from newest to oldest
-        // so each intermediate ledger remains valid.
-        throw e;
-      }
-    }
-    if(typeof window.renderStock==='function')await window.renderStock();
-    if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
-    if(typeof window.toast==='function')window.toast('Seluruh riwayat stok berhasil dihapus.');
-    else alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');
-    return true;
-  }
-
-  // Bulk reset must delete newest -> oldest. The previous implementation used
-  // oldest -> newest, which can make a valid ledger temporarily go negative.
+  // Bulk reset uses a dedicated atomic RPC. Do not delete rows one-by-one:
+  // an individual historical deletion can legitimately fail ledger validation,
+  // while clearing the complete ledger should simply leave an empty ledger.
   async function clearAllSafe(){
     const sb=SB();
     await getUser();
     if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return false;
-    const r=await sb.from('stock_movements').select('id,created_at').order('created_at',{ascending:false}).order('id',{ascending:false});
+
+    const r=await sb.rpc('clear_own_stock_movements');
     if(r.error)throw r.error;
-    const ids=(r.data||[]).map(x=>String(x.id)).filter(x=>UUID.test(x));
-    for(const id of ids)await deleteOne(id);
+
     if(typeof window.renderStock==='function')await window.renderStock();
     if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
     if(typeof window.toast==='function')window.toast('Seluruh riwayat stok berhasil dihapus.');
@@ -117,5 +92,5 @@
     observer.observe(document.documentElement||document,{childList:true,subtree:true});
     setTimeout(()=>observer.disconnect(),10000);
   }
-  console.log('[Barokah] Stock RPC Enforcer v3 active — newest-first reset.');
+  console.log('[Barokah] Stock RPC Enforcer v4 active — atomic bulk reset.');
 })();
