@@ -47,9 +47,21 @@
     document.head.appendChild(s);
   }
 
+  function loadProofTransfer(){
+    if(window.__buktiTfScriptLoaded)return;
+    window.__buktiTfScriptLoaded=true;
+    const s=document.createElement('script');
+    s.src='/bukti-transfer-local.js?v=1';
+    s.async=false;
+    s.onload=function(){window.dispatchEvent(new Event('barokah:bukti-tf-ready'));};
+    s.onerror=function(){console.error('[Barokah] gagal memuat bukti-transfer-local.js');};
+    document.head.appendChild(s);
+  }
+
   function start(){
     clean();
     loadStableDebt();
+    loadProofTransfer();
     setTimeout(clean,250);
     setTimeout(clean,1000);
     setTimeout(clean,2500);
