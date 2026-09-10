@@ -19,9 +19,31 @@
     return r.data;
   }
 
-  // Bulk reset uses a dedicated atomic RPC. Do not delete rows one-by-one:
-  // an individual historical deletion can legitimately fail ledger validation,
-  // while clearing the complete ledger should simply leave an empty ledger.
+  function resetLocalStockState(){
+    const keys=[
+      'barokah_stock_v53_butir',
+      'barokah_stock_v51_butir',
+      'barokah_stock_v50',
+      'barokah_stock_history_v53',
+      'barokah_stock_history_v51',
+      'barokah_stock_history_v50',
+      'barokah_stock_history_v49',
+      'barokah_bad_v59',
+      'barokah_unfit_v59',
+      'barokah_bad_eggs_v1'
+    ];
+    try{
+      keys.forEach(k=>localStorage.removeItem(k));
+      localStorage.setItem('barokah_stock_v53_butir','0');
+      localStorage.setItem('barokah_stock_history_v53','[]');
+      localStorage.setItem('barokah_bad_v59','0');
+      localStorage.setItem('barokah_unfit_v59','0');
+    }catch(e){}
+  }
+
+  // Bulk reset uses one atomic RPC. After the database is emptied, also purge
+  // every legacy local-storage stock cache so an old browser state cannot
+  // repopulate the screen after refresh.
   async function clearAllSafe(){
     const sb=SB();
     await getUser();
@@ -30,9 +52,13 @@
     const r=await sb.rpc('clear_own_stock_movements');
     if(r.error)throw r.error;
 
-    if(typeof window.renderStock==='function')await window.renderStock();
+    // Clear browser caches immediately and again after cloud refresh.
+    resetLocalStockState();
     if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
-    if(typeof window.toast==='function')window.toast('Seluruh riwayat stok berhasil dihapus.');
+    resetLocalStockState();
+    if(typeof window.renderStock==='function')await window.renderStock();
+
+    if(typeof window.toast==='function')window.toast('Seluruh riwayat stok berhasil dihapus. Stok Gudang kembali 0 Butir.');
     else alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');
     return true;
   }
@@ -92,5 +118,5 @@
     observer.observe(document.documentElement||document,{childList:true,subtree:true});
     setTimeout(()=>observer.disconnect(),10000);
   }
-  console.log('[Barokah] Stock RPC Enforcer v4 active — atomic bulk reset.');
+  console.log('[Barokah] Stock RPC Enforcer v5 active — atomic reset + local cache purge.');
 })();
