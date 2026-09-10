@@ -11,12 +11,6 @@
     return r.data.user;
   }
 
-  async function isAdmin(){
-    const sb=SB();
-    const r=await sb.rpc('is_admin');
-    return !r.error&&r.data===true;
-  }
-
   async function deleteOne(id){
     if(!UUID.test(String(id)))throw Error('ID riwayat stok tidak valid.');
     const sb=SB();
@@ -27,12 +21,37 @@
 
   async function clearAll(){
     const sb=SB();
-    const u=await getUser();
+    await getUser();
     if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return false;
-    const admin=await isAdmin();
-    let q=sb.from('stock_movements').select('id').order('created_at',{ascending:true}).order('id',{ascending:true});
-    if(!admin)q=q.eq('user_id',u.id);
-    const r=await q;
+    // Snapshot IDs first. Every deletion goes through the canonical RPC,
+    // so the ledger is recalculated after each removal and the old REST DELETE
+    // path is never used.
+    const r=await sb.from('stock_movements').select('id').order('created_at',{ascending:true}).order('id',{ascending:true});
+    if(r.error)throw r.error;
+    const ids=(r.data||[]).map(x=>String(x.id)).filter(x=>UUID.test(x));
+    for(const id of ids){
+      try{await deleteOne(id);}
+      catch(e){
+        // A historical ledger may become temporarily invalid when deleting
+        // an earlier movement. For bulk reset, delete from newest to oldest
+        // so each intermediate ledger remains valid.
+        throw e;
+      }
+    }
+    if(typeof window.renderStock==='function')await window.renderStock();
+    if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
+    if(typeof window.toast==='function')window.toast('Seluruh riwayat stok berhasil dihapus.');
+    else alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');
+    return true;
+  }
+
+  // Bulk reset must delete newest -> oldest. The previous implementation used
+  // oldest -> newest, which can make a valid ledger temporarily go negative.
+  async function clearAllSafe(){
+    const sb=SB();
+    await getUser();
+    if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return false;
+    const r=await sb.from('stock_movements').select('id,created_at').order('created_at',{ascending:false}).order('id',{ascending:false});
     if(r.error)throw r.error;
     const ids=(r.data||[]).map(x=>String(x.id)).filter(x=>UUID.test(x));
     for(const id of ids)await deleteOne(id);
@@ -54,14 +73,12 @@
   }
 
   async function safeClearHandler(){
-    try{await clearAll();}
+    try{await clearAllSafe();}
     catch(e){console.error('[STOCK RPC ENFORCER CLEAR]',e);alert('Gagal menghapus riwayat stok: '+(e.message||e));}
   }
 
-  // Expose canonical RPC handlers. Re-assert them because index.html and older modules
-  // also define these globals and can overwrite them during page initialization.
   function installGlobals(){
-    window.__barokahStockRpcEnforcer={deleteOne,clearAll};
+    window.__barokahStockRpcEnforcer={deleteOne,clearAll:clearAllSafe};
     window.deleteStockMovement=safeDeleteHandler;
     window.clearStockHistory=safeClearHandler;
   }
@@ -70,9 +87,6 @@
   setTimeout(installGlobals,1500);
   setTimeout(installGlobals,3000);
 
-  // Capture BEFORE legacy document handlers. Any stock delete button is routed to RPC.
-  // Bulk-clear detection intentionally does not depend on an id or onclick attribute,
-  // because the legacy clear button can be wired by an inline/local handler.
   document.addEventListener('click',function(e){
     const el=e.target?.closest?.('button,a,[role="button"]');
     if(!el)return;
@@ -82,7 +96,6 @@
     const bulk=el.closest?.('[data-stock-clear],#clearStockHistoryBtn,#clearStockBtn')||
       (el.matches?.('[data-stock-clear],#clearStockHistoryBtn,#clearStockBtn')?el:null)||
       (/hapus\s+seluruh\s+riwayat\s+stok/.test(text)||/reset\s+stok\s+gudang/.test(text));
-
     if(del){
       e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
       if(del.dataset.rpcEnforcerBusy==='1')return;
@@ -99,12 +112,10 @@
     }
   },true);
 
-  // If a legacy module reassigns the global later, restore the canonical handlers.
   if(window.MutationObserver){
     const observer=new MutationObserver(()=>installGlobals());
     observer.observe(document.documentElement||document,{childList:true,subtree:true});
     setTimeout(()=>observer.disconnect(),10000);
   }
-
-  console.log('[Barokah] Stock RPC Enforcer v2 active — legacy stock DELETE disabled.');
+  console.log('[Barokah] Stock RPC Enforcer v3 active — newest-first reset.');
 })();
