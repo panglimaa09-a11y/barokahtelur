@@ -45,6 +45,15 @@
     s.onerror=function(){console.error('Gagal memuat profile-v70.3.9.js');};
     document.head.appendChild(s);
   }
-  function bootModules(){setTimeout(loadDebtModule,300);setTimeout(loadProfileModule,450);}
+  function loadProofTransferModule(){
+    if(document.querySelector('script[data-barokah-bukti-tf]'))return;
+    var s=document.createElement('script');
+    s.src='bukti-transfer-local.js?v=1';
+    s.dataset.barokahBuktiTf='1';
+    s.onload=function(){console.log('Barokah Bukti Transfer loaded');};
+    s.onerror=function(){console.error('Gagal memuat bukti-transfer-local.js');};
+    document.head.appendChild(s);
+  }
+  function bootModules(){setTimeout(loadDebtModule,300);setTimeout(loadProfileModule,450);setTimeout(loadProofTransferModule,550);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootModules);else bootModules();
 })();
