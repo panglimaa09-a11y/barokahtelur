@@ -14,6 +14,13 @@
     return data.user;
   }
 
+  function numberValue(value){
+    const raw=String(value==null?'':value).trim();
+    if(!raw)return 0;
+    const digits=raw.replace(/\D/g,'');
+    return digits?Number(digits):0;
+  }
+
   function removeDueDateUI(){
     const form=document.getElementById('debtForm');
     if(form){
@@ -29,7 +36,7 @@
       if(t){
         const head=t.querySelector('thead tr');
         if(head){
-          [...head.children].forEach((th,i)=>{if((th.textContent||'').trim().toLowerCase()==='jatuh tempo')th.remove();});
+          [...head.children].forEach((th)=>{if((th.textContent||'').trim().toLowerCase()==='jatuh tempo')th.remove();});
         }
         t.querySelectorAll('tbody tr').forEach(tr=>{
           const cells=[...tr.children];
@@ -49,10 +56,10 @@
     try{
       const u=await user();
       const kind=document.getElementById('debtKind')?.value||'piutang';
-      const party=document.getElementById('debtParty')?.value.trim();
-      const total=Number(document.getElementById('debtTotal')?.value||0);
-      const paid=Number(document.getElementById('debtPaid')?.value||0);
-      const quantity=Number(document.getElementById('debtQuantity')?.value||1);
+      const party=(document.getElementById('debtParty')?.value||document.getElementById('debtName')?.value||'').trim();
+      const total=numberValue(document.getElementById('debtTotal')?.value);
+      const paid=numberValue(document.getElementById('debtPaid')?.value||0);
+      const quantity=Number(document.getElementById('debtQuantity')?.value||document.getElementById('debtQty')?.value||1);
       const unit=(document.getElementById('debtUnit')?.value||'Paket').trim()||'Paket';
       if(!party||!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total||!Number.isFinite(quantity)||quantity<=0){
         alert('Periksa nama, jumlah, total, dan pembayaran.');
@@ -78,8 +85,10 @@
       if(form)form.reset();
       const date=document.getElementById('debtDate');if(date)date.value=today();
       const q=document.getElementById('debtQuantity');if(q)q.value='1';
+      const q2=document.getElementById('debtQty');if(q2)q2.value='1';
       const un=document.getElementById('debtUnit');if(un)un.value='Paket';
       removeDueDateUI();
+      document.dispatchEvent(new CustomEvent('barokah:debt-changed'));
       document.getElementById('debtNavBtn')?.click();
       setTimeout(removeDueDateUI,200);
       alert('Utang/piutang berhasil disimpan.');
