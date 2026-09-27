@@ -2,7 +2,7 @@
   'use strict';
   const SB=()=>window.barokahSupabase;
   const today=()=>new Date().toISOString().slice(0,10);
-  const esc=v=>String(v==null?'':v).replace(/[&<>\\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\"':'&quot;',"'":'&#039;'}[c]));
+  const esc=v=>String(v==null?'':v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
   let debtPatched=false;
 
   async function user(){
@@ -17,7 +17,7 @@
   function numberValue(value){
     const raw=String(value==null?'':value).trim();
     if(!raw)return 0;
-    const digits=raw.replace(/\\D/g,'');
+    const digits=raw.replace(/\D/g,'');
     return digits?Number(digits):0;
   }
 
