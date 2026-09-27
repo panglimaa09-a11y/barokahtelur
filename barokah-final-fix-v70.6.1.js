@@ -2,7 +2,7 @@
   'use strict';
   const SB=()=>window.barokahSupabase;
   const today=()=>new Date().toISOString().slice(0,10);
-  const esc=v=>String(v==null?'':v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
+  const esc=v=>String(v==null?'':v).replace(/[&<>\\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\"':'&quot;',"'":'&#039;'}[c]));
   let debtPatched=false;
 
   async function user(){
@@ -17,8 +17,29 @@
   function numberValue(value){
     const raw=String(value==null?'':value).trim();
     if(!raw)return 0;
-    const digits=raw.replace(/\D/g,'');
+    const digits=raw.replace(/\\D/g,'');
     return digits?Number(digits):0;
+  }
+
+  // Ambil nilai dari field yang benar-benar terlihat/terisi.
+  // Ini mencegah validasi membaca input duplikat lama yang masih ada di DOM.
+  function fieldValue(ids, fallback=''){
+    for(const id of ids){
+      const nodes=[...document.querySelectorAll('[id="'+id+'"]')];
+      for(const el of nodes){
+        if(el.disabled)continue;
+        const value=String(el.value??'').trim();
+        const visible=!!(el.offsetWidth||el.offsetHeight||el.getClientRects().length);
+        if(value && visible)return value;
+      }
+      for(const el of nodes){
+        if(!el.disabled){
+          const value=String(el.value??'').trim();
+          if(value)return value;
+        }
+      }
+    }
+    return fallback;
   }
 
   function removeDueDateUI(){
@@ -55,29 +76,36 @@
     ev.stopImmediatePropagation();
     try{
       const u=await user();
-      const kind=document.getElementById('debtKind')?.value||'piutang';
-      const party=(document.getElementById('debtParty')?.value||document.getElementById('debtName')?.value||'').trim();
-      const total=numberValue(document.getElementById('debtTotal')?.value);
-      const paid=numberValue(document.getElementById('debtPaid')?.value||0);
-      const quantity=Number(document.getElementById('debtQuantity')?.value||document.getElementById('debtQty')?.value||1);
-      const unit=(document.getElementById('debtUnit')?.value||'Paket').trim()||'Paket';
-      if(!party||!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total||!Number.isFinite(quantity)||quantity<=0){
-        alert('Periksa nama, jumlah, total, dan pembayaran.');
+      const kind=fieldValue(['debtKind'],'piutang')||'piutang';
+      const party=fieldValue(['debtParty','debtName']);
+      const total=numberValue(fieldValue(['debtTotal'],'0'));
+      const paidRaw=fieldValue(['debtPaid'],'0');
+      const paid=numberValue(paidRaw);
+      const quantityRaw=fieldValue(['debtQuantity','debtQty'],'1');
+      let quantity=Number(String(quantityRaw).replace(',','.'));
+      if(!Number.isFinite(quantity)||quantity<=0)quantity=1;
+      const unit=fieldValue(['debtUnit'],'Paket')||'Paket';
+
+      // Total dan nama adalah field wajib. Pembayaran kosong dianggap Rp0,
+      // sedangkan jumlah kosong/tidak valid kembali ke 1 Paket.
+      if(!party||!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total){
+        alert('Periksa nama, total, dan pembayaran.');
         return;
       }
+
       const payload={
         user_id:u.id,
         kind,
         party_type:kind==='piutang'?'pelanggan':'supplier',
         party_name:party,
-        phone:document.getElementById('debtPhone')?.value.trim()||'',
-        reference_no:document.getElementById('debtRef')?.value.trim()||'',
-        debt_date:document.getElementById('debtDate')?.value||today(),
+        phone:fieldValue(['debtPhone']),
+        reference_no:fieldValue(['debtRef']),
+        debt_date:fieldValue(['debtDate'],today())||today(),
         total_amount:total,
         paid_amount:paid,
         quantity,
         unit,
-        note:document.getElementById('debtNote')?.value.trim()||''
+        note:fieldValue(['debtNote'])
       };
       const {error}=await SB().from('debts_receivables').insert(payload);
       if(error)throw error;
