@@ -22,6 +22,11 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('operasional-sync-v70.4.9.js?v=1','data-barokah-operational-sync-v7049');
     load('stock-gudang-integrated-v70.5.3.js?v=1','data-barokah-stock-integrated-v7053');
     load('stock-gudang-integrated-hooks-v70.5.3.js?v=1','data-barokah-stock-integrated-hooks-v7053');
+
+    // Shared business data: admin accounts can see the same records
+    // even when their Auth UIDs are different.
+    load('shared-data-access.js?v=1','data-barokah-shared-data-access');
+
     load('debt-dashboard-sync-v70.6.2.js?v=1','data-barokah-debt-dashboard-sync-v7062');
     load('debt-sync-events-v70.6.2.js?v=1','data-barokah-debt-sync-events-v7062');
     load('debt-history-sync-v70.6.3.js?v=1','data-barokah-debt-history-sync-v7063');
