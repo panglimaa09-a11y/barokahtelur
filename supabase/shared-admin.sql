@@ -29,11 +29,19 @@ as $$
   );
 $$;
 
--- Register the requested second admin. The Auth account must already exist.
+-- Register the existing admin account.
 insert into public.admin_users (user_id, email)
 select id, lower(email)
 from auth.users
 where lower(email) = lower('kenangalinangkung4444@gmail.com')
+on conflict (user_id) do update set email = excluded.email;
+
+-- Register the second production login UID explicitly.
+-- The email is read from auth.users; no email is hardcoded here.
+insert into public.admin_users (user_id, email)
+select id, lower(email)
+from auth.users
+where id = 'e62dd6fe-39fc-43a5-b13c-5ab82207345b'
 on conflict (user_id) do update set email = excluded.email;
 
 -- Shared transaction access: owners retain access, admins can manage all rows.
