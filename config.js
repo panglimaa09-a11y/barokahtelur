@@ -25,6 +25,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('debt-dashboard-sync-v70.6.2.js?v=1','data-barokah-debt-dashboard-sync-v7062');
     load('debt-sync-events-v70.6.2.js?v=1','data-barokah-debt-sync-events-v7062');
     load('debt-history-sync-v70.6.3.js?v=1','data-barokah-debt-history-sync-v7063');
+    load('debt-save-production-fix-v70.6.4.js?v=1','data-barokah-debt-save-production-fix-v7064');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
