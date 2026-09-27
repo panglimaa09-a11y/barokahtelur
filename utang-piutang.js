@@ -57,13 +57,64 @@
 
   async function user(){const sb=SB();if(!sb)throw new Error('Supabase belum siap.');const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data.user)throw new Error('Sesi login tidak aktif.');return data.user;}
   function changed(){document.dispatchEvent(new CustomEvent('barokah:debt-changed'));}
+  function visibleField(ids){
+    for(const id of ids){
+      const nodes=[...document.querySelectorAll('#'+CSS.escape(id))];
+      const active=nodes.find(el=>{const r=el.getBoundingClientRect();return !el.disabled && r.width>0 && r.height>0;});
+      if(active)return active;
+    }
+    for(const id of ids){const el=document.getElementById(id);if(el)return el;}
+    return null;
+  }
+  function fieldValue(ids,fallback=''){const el=visibleField(ids);return el?String(el.value??el.textContent??'').trim():fallback;}
+  function parseMoney(value){
+    const raw=String(value??'').trim();
+    if(!raw)return 0;
+    const normalized=raw.replace(/[^0-9,-]/g,'').replace(/\\./g,'').replace(',','.');
+    const n=Number(normalized);
+    return Number.isFinite(n)?n:0;
+  }
+  async function sharedAdmin(){
+    try{const r=await SB().rpc('is_admin');return !r?.error && r.data===true;}catch(e){return false;}
+  }
+  function scopedQuery(q,u,isAdmin){return isAdmin?q:q.eq('user_id',u.id);}
 
   async function load(){
-    try{const u=await user();const {data,error}=await SB().from('debts_receivables').select('*').eq('user_id',u.id).order('debt_date',{ascending:false}).order('created_at',{ascending:false});if(error)throw error;rows=data||[];render();}
+    try{const u=await user(),admin=await sharedAdmin();let q=SB().from('debts_receivables').select('*');q=scopedQuery(q,u,admin).order('debt_date',{ascending:false}).order('created_at',{ascending:false});const {data,error}=await q;if(error)throw error;rows=data||[];render();}
     catch(e){console.error(e);const box=document.getElementById('debtTable');if(box)box.innerHTML='<div class="debt-empty">Modul belum siap: '+esc(e.message||e)+'<br><small>Pastikan migration V70.3.7 sudah dijalankan di Supabase.</small></div>';}
   }
 
-  async function addDebt(ev){ev.preventDefault();try{const u=await user(),kind=document.getElementById('debtKind').value,party=document.getElementById('debtParty').value.trim(),total=Number(document.getElementById('debtTotal').value),paid=Number(document.getElementById('debtPaid').value||0);if(!party||!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total){alert('Periksa nama, total, dan jumlah pembayaran.');return;}const payload={user_id:u.id,kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:party,phone:document.getElementById('debtPhone').value.trim(),reference_no:document.getElementById('debtRef').value.trim(),debt_date:document.getElementById('debtDate').value||today(),due_date:document.getElementById('debtDue').value||null,total_amount:total,paid_amount:paid,quantity:Number(document.getElementById('debtQty').value||1),unit:document.getElementById('debtUnit').value.trim()||'Paket',note:document.getElementById('debtNote').value.trim()};const {error}=await SB().from('debts_receivables').insert(payload);if(error)throw error;document.getElementById('debtForm').reset();document.getElementById('debtDate').value=today();document.getElementById('debtQty').value='1';document.getElementById('debtUnit').value='Paket';await load();changed();alert('Utang/piutang berhasil disimpan.');}catch(e){alert('Gagal menyimpan: '+(e.message||e));}}
+  async function addDebt(ev){
+    ev.preventDefault();
+    try{
+      const u=await user();
+      const kind=fieldValue(['debtKind'],'piutang')||'piutang';
+      const party=fieldValue(['debtParty','debtName']);
+      const total=parseMoney(fieldValue(['debtTotal']));
+      const paid=parseMoney(fieldValue(['debtPaid'],'0'))||0;
+      const quantity=Number(fieldValue(['debtQty','debtQuantity'],'1').replace(',','.'))||1;
+      const unit=fieldValue(['debtUnit'],'Paket')||'Paket';
+      if(!party||!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total||!Number.isFinite(quantity)||quantity<=0){
+        alert('Periksa nama, jumlah, total, dan pembayaran.');
+        return;
+      }
+      const payload={user_id:u.id,kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:party,phone:fieldValue(['debtPhone']),reference_no:fieldValue(['debtRef']),debt_date:fieldValue(['debtDate'],today())||today(),due_date:fieldValue(['debtDue'])||null,total_amount:total,paid_amount:paid,quantity,unit,note:fieldValue(['debtNote'])};
+      const first=await SB().from('debts_receivables').insert(payload);
+      if(first.error){
+        const msg=String(first.error.message||first.error.details||'');
+        if(/quantity|unit|schema cache|PGRST204/i.test(msg)){
+          const base={...payload};delete base.quantity;delete base.unit;
+          const retry=await SB().from('debts_receivables').insert(base);
+          if(retry.error)throw retry.error;
+        }else throw first.error;
+      }
+      const form=document.getElementById('debtForm');if(form)form.reset();
+      const date=visibleField(['debtDate']);if(date)date.value=today();
+      const qty=visibleField(['debtQty','debtQuantity']);if(qty)qty.value='1';
+      const un=visibleField(['debtUnit']);if(un)un.value='Paket';
+      await load();changed();alert('Utang/piutang berhasil disimpan.');
+    }catch(e){alert('Gagal menyimpan: '+(e.message||e.details||e.hint||e));}
+  }
 
   function openEdit(id){
     const r=rows.find(x=>String(x.id)===String(id));if(!r)return;
@@ -83,18 +134,18 @@
   }
   function closeEdit(){editingId=null;const m=document.getElementById('debtEditModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}}
 
-  async function saveEdit(ev){ev.preventDefault();if(!editingId)return;try{const u=await user();const total=Number(document.getElementById('editDebtTotal').value),paid=Number(document.getElementById('editDebtPaid').value||0);if(!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total){alert('Total dan pembayaran tidak valid.');return;}const kind=document.getElementById('editDebtKind').value;const payload={kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:document.getElementById('editDebtParty').value.trim(),phone:document.getElementById('editDebtPhone').value.trim(),reference_no:document.getElementById('editDebtRef').value.trim(),debt_date:document.getElementById('editDebtDate').value||today(),due_date:document.getElementById('editDebtDue').value||null,total_amount:total,paid_amount:paid,quantity:Number(document.getElementById('editDebtQty').value||1),unit:document.getElementById('editDebtUnit').value.trim()||'Paket',note:document.getElementById('editDebtNote').value.trim()};if(!payload.party_name){alert('Nama wajib diisi.');return;}const {error}=await SB().from('debts_receivables').update(payload).eq('id',editingId).eq('user_id',u.id);if(error)throw error;closeEdit();await load();changed();alert('Perubahan utang/piutang berhasil disimpan.');}catch(e){alert('Gagal mengedit: '+(e.message||e));}}
+  async function saveEdit(ev){ev.preventDefault();if(!editingId)return;try{const u=await user();const total=Number(document.getElementById('editDebtTotal').value),paid=Number(document.getElementById('editDebtPaid').value||0);if(!Number.isFinite(total)||total<=0||!Number.isFinite(paid)||paid<0||paid>total){alert('Total dan pembayaran tidak valid.');return;}const kind=document.getElementById('editDebtKind').value;const payload={kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:document.getElementById('editDebtParty').value.trim(),phone:document.getElementById('editDebtPhone').value.trim(),reference_no:document.getElementById('editDebtRef').value.trim(),debt_date:document.getElementById('editDebtDate').value||today(),due_date:document.getElementById('editDebtDue').value||null,total_amount:total,paid_amount:paid,quantity:Number(document.getElementById('editDebtQty').value||1),unit:document.getElementById('editDebtUnit').value.trim()||'Paket',note:document.getElementById('editDebtNote').value.trim()};if(!payload.party_name){alert('Nama wajib diisi.');return;}const admin=await sharedAdmin();let q=SB().from('debts_receivables').update(payload).eq('id',editingId);if(!admin)q=q.eq('user_id',u.id);const {error}=await q;if(error)throw error;closeEdit();await load();changed();alert('Perubahan utang/piutang berhasil disimpan.');}catch(e){alert('Gagal mengedit: '+(e.message||e));}}
 
-  async function pay(id){try{const r=rows.find(x=>x.id===id);if(!r)return;const left=balance(r);if(left<=0){alert('Catatan ini sudah lunas.');return;}const amount=Number(prompt('Masukkan nominal pembayaran:\nSisa '+fmt(left),'0'));if(!Number.isFinite(amount)||amount<=0||amount>left){alert('Nominal pembayaran tidak valid.');return;}const note=prompt('Keterangan pembayaran (opsional):','')||'';const u=await user();const {data:p,error:pe}=await SB().from('debt_payments').insert({debt_id:id,user_id:u.id,payment_date:today(),amount,note}).select('*').single();if(pe)throw pe;const paidBefore=Number(r.paid_amount||0),total=Number(r.total_amount||0),paid=Math.min(total,paidBefore+amount);const {error:ue}=await SB().from('debts_receivables').update({paid_amount:paid}).eq('id',id).eq('user_id',u.id);if(ue){await SB().from('debt_payments').delete().eq('id',p.id).eq('user_id',u.id);throw ue;}await load();changed();alert(paid>=total?'Pembayaran berhasil dicatat. Piutang/utang sudah LUNAS.':'Pembayaran berhasil dicatat.');}catch(e){alert('Gagal mencatat pembayaran: '+(e.message||e));}}
+  async function pay(id){try{const r=rows.find(x=>x.id===id);if(!r)return;const left=balance(r);if(left<=0){alert('Catatan ini sudah lunas.');return;}const amount=Number(prompt('Masukkan nominal pembayaran:\nSisa '+fmt(left),'0'));if(!Number.isFinite(amount)||amount<=0||amount>left){alert('Nominal pembayaran tidak valid.');return;}const note=prompt('Keterangan pembayaran (opsional):','')||'';const u=await user();const {data:p,error:pe}=await SB().from('debt_payments').insert({debt_id:id,user_id:u.id,payment_date:today(),amount,note}).select('*').single();if(pe)throw pe;const paidBefore=Number(r.paid_amount||0),total=Number(r.total_amount||0),paid=Math.min(total,paidBefore+amount);const admin=await sharedAdmin();let uq=SB().from('debts_receivables').update({paid_amount:paid}).eq('id',id);if(!admin)uq=uq.eq('user_id',u.id);const {error:ue}=await uq;if(ue){await SB().from('debt_payments').delete().eq('id',p.id).eq('user_id',u.id);throw ue;}await load();changed();alert(paid>=total?'Pembayaran berhasil dicatat. Piutang/utang sudah LUNAS.':'Pembayaran berhasil dicatat.');}catch(e){alert('Gagal mencatat pembayaran: '+(e.message||e));}}
 
-  async function del(id){if(!confirm('Hapus catatan utang/piutang beserta riwayat pembayarannya?'))return;try{const u=await user();const {error}=await SB().from('debts_receivables').delete().eq('id',id).eq('user_id',u.id);if(error)throw error;await load();changed();}catch(e){alert('Gagal menghapus: '+(e.message||e));}}
+  async function del(id){if(!confirm('Hapus catatan utang/piutang beserta riwayat pembayarannya?'))return;try{const u=await user();const admin=await sharedAdmin();let q=SB().from('debts_receivables').delete().eq('id',id);if(!admin)q=q.eq('user_id',u.id);const {error}=await q;if(error)throw error;await load();changed();}catch(e){alert('Gagal menghapus: '+(e.message||e));}}
 
   function render(){
     const p=rows.filter(x=>x.kind==='piutang'),u=rows.filter(x=>x.kind==='utang');document.getElementById('debtTotalPiutang').textContent=fmt(p.reduce((s,x)=>s+balance(x),0));document.getElementById('debtTotalUtang').textContent=fmt(u.reduce((s,x)=>s+balance(x),0));document.getElementById('debtCountOpen').textContent=rows.filter(x=>balance(x)>0).length;document.getElementById('debtPaidTotal').textContent=fmt(rows.reduce((s,x)=>s+Math.min(Number(x.total_amount||0),Number(x.paid_amount||0)),0));const search=(document.getElementById('debtSearch')?.value||'').toLowerCase();let list=rows.filter(x=>x.kind===tab);if(search)list=list.filter(x=>(String(x.party_name)+' '+String(x.reference_no||'')+' '+String(x.phone||'')).toLowerCase().includes(search));document.getElementById('debtListTitle').textContent=tab==='piutang'?'Daftar Piutang Pelanggan':'Daftar Utang Supplier';const box=document.getElementById('debtTable');if(!list.length){box.innerHTML='<div class="debt-empty">Belum ada '+(tab==='piutang'?'piutang pelanggan.':'utang supplier.')+'</div>';return;}box.innerHTML='<table><thead><tr><th>Nama</th><th>Tanggal</th><th>Referensi</th><th>Jumlah</th><th>Satuan</th><th>Total</th><th>Dibayar</th><th>Sisa</th><th>Jatuh Tempo</th><th>Status</th><th>Aksi</th></tr></thead><tbody>'+list.map(r=>{const st=status(r);return '<tr><td><strong>'+esc(r.party_name)+'</strong><span class="sub">'+esc(r.phone||r.party_type)+'</span></td><td>'+esc(r.debt_date)+'</td><td>'+esc(r.reference_no||'-')+'</td><td>'+fmt(r.quantity??1)+'</td><td>'+esc(r.unit||'Paket')+'</td><td>'+fmt(r.total_amount)+'</td><td>'+fmt(r.paid_amount)+'</td><td><strong>'+fmt(balance(r))+'</strong></td><td>'+esc(r.due_date||'-')+'</td><td><span class="debt-status '+st[1]+'">'+st[0]+'</span></td><td><div class="debt-actions-cell"><button type="button" class="debt-edit" data-edit="'+r.id+'">✏️ Edit</button><button type="button" class="debt-nota" data-nota="'+r.id+'">🧾 Nota</button><button type="button" class="debt-pay" data-pay="'+r.id+'">'+(st[0]==='Lunas'?'Lunas':'Bayar')+'</button><button type="button" class="debt-del" data-del="'+r.id+'">Hapus</button></div></td></tr>';}).join('')+'</tbody></table>';box.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEdit(b.dataset.edit);}));box.querySelectorAll('[data-pay]').forEach(b=>b.addEventListener('click',()=>pay(b.dataset.pay)));box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>del(b.dataset.del)));
   }
 
   async function printList(){
-    try{const u=await user();const {data,error}=await SB().from('debts_receivables').select('*').eq('user_id',u.id).eq('kind',tab).order('debt_date',{ascending:false}).order('created_at',{ascending:false});if(error)throw error;const list=data||[];const title=tab==='piutang'?'Laporan Piutang Pelanggan':'Laporan Utang Supplier';const body=list.map(r=>'<tr><td>'+esc(r.party_name)+'</td><td>'+esc(r.debt_date)+'</td><td>'+esc(r.reference_no||'-')+'</td><td>'+fmt(r.quantity??1)+'</td><td>'+esc(r.unit||'Paket')+'</td><td>'+fmt(r.total_amount)+'</td><td>'+fmt(r.paid_amount)+'</td><td>'+fmt(balance(r))+'</td><td>'+esc(r.due_date||'-')+'</td><td>'+status(r)[0]+'</td></tr>').join('');const html='<!doctype html><html><head><meta charset="utf-8"><title>'+title+' - Barokah Telur</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;color:#172018}h1{font-size:22px}p{font-size:12px;color:#666}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:7px;text-align:left}th{background:#14532d;color:#fff}</style></head><body><h1>BAROKAH TELUR</h1><h2>'+title+'</h2><p>Dicetak '+new Date().toLocaleString('id-ID')+' • Data diambil langsung dari Supabase</p><table><thead><tr><th>Nama</th><th>Tanggal</th><th>Referensi</th><th>Jumlah</th><th>Satuan</th><th>Total</th><th>Dibayar</th><th>Sisa</th><th>Jatuh Tempo</th><th>Status</th></tr></thead><tbody>'+body+'</tbody></table></body></html>';let f=document.getElementById('barokahDebtPrintFrame');if(f)f.remove();f=document.createElement('iframe');f.id='barokahDebtPrintFrame';Object.assign(f.style,{position:'fixed',width:'1px',height:'1px',right:'0',bottom:'0',border:'0',opacity:'0',pointerEvents:'none'});document.body.appendChild(f);f.onload=()=>setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}finally{setTimeout(()=>f.remove(),1200);}},200);f.srcdoc=html;
+    try{const u=await user();let q=SB().from('debts_receivables').select('*');if(!(await sharedAdmin()))q=q.eq('user_id',u.id);const {data,error}=await q.eq('kind',tab).order('debt_date',{ascending:false}).order('created_at',{ascending:false});if(error)throw error;const list=data||[];const title=tab==='piutang'?'Laporan Piutang Pelanggan':'Laporan Utang Supplier';const body=list.map(r=>'<tr><td>'+esc(r.party_name)+'</td><td>'+esc(r.debt_date)+'</td><td>'+esc(r.reference_no||'-')+'</td><td>'+fmt(r.quantity??1)+'</td><td>'+esc(r.unit||'Paket')+'</td><td>'+fmt(r.total_amount)+'</td><td>'+fmt(r.paid_amount)+'</td><td>'+fmt(balance(r))+'</td><td>'+esc(r.due_date||'-')+'</td><td>'+status(r)[0]+'</td></tr>').join('');const html='<!doctype html><html><head><meta charset="utf-8"><title>'+title+' - Barokah Telur</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;color:#172018}h1{font-size:22px}p{font-size:12px;color:#666}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:7px;text-align:left}th{background:#14532d;color:#fff}</style></head><body><h1>BAROKAH TELUR</h1><h2>'+title+'</h2><p>Dicetak '+new Date().toLocaleString('id-ID')+' • Data diambil langsung dari Supabase</p><table><thead><tr><th>Nama</th><th>Tanggal</th><th>Referensi</th><th>Jumlah</th><th>Satuan</th><th>Total</th><th>Dibayar</th><th>Sisa</th><th>Jatuh Tempo</th><th>Status</th></tr></thead><tbody>'+body+'</tbody></table></body></html>';let f=document.getElementById('barokahDebtPrintFrame');if(f)f.remove();f=document.createElement('iframe');f.id='barokahDebtPrintFrame';Object.assign(f.style,{position:'fixed',width:'1px',height:'1px',right:'0',bottom:'0',border:'0',opacity:'0',pointerEvents:'none'});document.body.appendChild(f);f.onload=()=>setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}finally{setTimeout(()=>f.remove(),1200);}},200);f.srcdoc=html;
     }catch(e){alert('Gagal mencetak: '+(e.message||e));}
   }
 
