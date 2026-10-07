@@ -41,7 +41,7 @@
     if(window.__stableDebtRendererLoaded)return;
     window.__stableDebtRendererLoaded=true;
     const s=document.createElement('script');
-    s.src='/debt-stable-render-v70.8-preview.js?v=1';
+    s.src='debt-stable-render-v70.8-preview.js?v=1';
     s.async=false;
     s.onload=function(){window.dispatchEvent(new Event('barokah:stable-debt-ready'));};
     document.head.appendChild(s);
@@ -51,10 +51,10 @@
     if(window.__buktiTfScriptLoaded)return;
     window.__buktiTfScriptLoaded=true;
     const s=document.createElement('script');
-    s.src='/bukti-transfer-local.js?v=1';
+    s.src='bukti-transfer-supabase.js?v=1';
     s.async=false;
     s.onload=function(){window.dispatchEvent(new Event('barokah:bukti-tf-ready'));};
-    s.onerror=function(){console.error('[Barokah] gagal memuat bukti-transfer-local.js');};
+    s.onerror=function(){console.error('[Barokah] gagal memuat bukti-transfer-supabase.js');};
     document.head.appendChild(s);
   }
 
