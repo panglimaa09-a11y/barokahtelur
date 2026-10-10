@@ -34,16 +34,17 @@
     Object.defineProperty(sb,'__barokahSharedDataWrapped',{value:true,enumerable:false});
     return sb;
   }
+  // OPTIMASI 10 Okt 2026: fan-out ke buktiTransfer.refresh & syncDebtDashboard DIHAPUS.
+  // Keduanya sudah punya trigger sendiri (MutationObserver/render-hook & event+interval),
+  // sehingga sync tiap interval tidak lagi memicu 3x refresh berat berantai (cascade).
   async function sync(){
     const sb=getClient();if(!sb)return;
     wrapClient(sb);
     await isAdmin();
     if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
-    if(window.barokahBuktiTransfer?.refresh)window.barokahBuktiTransfer.refresh();
-    if(window.barokahSyncDebtDashboard)window.barokahSyncDebtDashboard();
   }
   window.barokahRefreshSharedData=sync;
   window.addEventListener('barokah:supabase-ready',()=>setTimeout(sync,100));
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(sync,1400),{once:true});else setTimeout(sync,1400);
-  setInterval(()=>{if(window.barokahSupabase)sync().catch(console.error)},3000);
+  setInterval(()=>{if(window.barokahSupabase)sync().catch(console.error)},30000); // OPTIMASI 10 Okt 2026: 3 dtk -> 30 dtk
 })();

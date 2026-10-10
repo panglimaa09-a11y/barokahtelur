@@ -50,7 +50,7 @@
     document.addEventListener('barokah:debt-changed',sync);
     document.addEventListener('barokah:transaction-changed',sync);
     window.addEventListener('focus',sync);
-    setInterval(sync,3000);
+    setInterval(sync,30000); // OPTIMASI 10 Okt 2026: 3 dtk -> 30 dtk (event barokah:debt-changed & focus tetap jadi trigger utama)
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true});
   else start();

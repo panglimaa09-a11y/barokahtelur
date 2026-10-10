@@ -637,6 +637,15 @@ function toast(msg){$("toast").textContent=msg;$("toast").style.display="block";
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){showError("Data tidak bisa disimpan di browser.");}render();}
 let state=load();
+/* OPTIMASI 10 Okt 2026 — pagination tabel: hanya 100 baris pertama yang di-render + tombol "Muat lagi",
+   agar halaman tetap ringan walau data ribuan. Total/grafik dashboard tetap dihitung dari SEMUA data. */
+let histShown=100,histSig="";
+window.__opShown=window.__opShown||100;
+window.__stockShown=window.__stockShown||100;
+window.__barokahOpMoreBtn=window.__barokahOpMoreBtn||function(total){var s=window.__opShown||100;return total>s?'<div style="text-align:center;margin:12px 0"><button type="button" class="btn ghost" onclick="window.__barokahOpMore()">Muat 100 lagi ('+s+' dari '+total+')</button></div>':'';};
+window.__barokahOpMore=window.__barokahOpMore||function(){window.__opShown=(window.__opShown||100)+100;if(window.BarokahOperationalSync&&window.BarokahOperationalSync.sync)window.BarokahOperationalSync.sync();};
+window.__barokahStockMoreBtn=window.__barokahStockMoreBtn||function(total){var s=window.__stockShown||100;return total>s?'<div style="text-align:center;margin:12px 0"><button type="button" class="btn ghost" onclick="window.__barokahStockMore()">Muat 100 lagi ('+s+' dari '+total+')</button></div>':'';};
+window.__barokahStockMore=window.__barokahStockMore||function(){window.__stockShown=(window.__stockShown||100)+100;if(typeof window.renderStock==="function")window.renderStock();};
 
 function showPage(name){
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
@@ -819,8 +828,10 @@ function delTx(id){
 
 function renderHistory(){
   const type=$("historyType")?.value||"all",q=($("historySearch")?.value||"").trim().toLowerCase();
+  const __sig=type+"|"+q+"|"+state.length;if(__sig!==histSig){histSig=__sig;histShown=100;}
   const rows=state.filter(t=>(type==="all"||t.type===type)&&(!q||t.note.toLowerCase().includes(q))).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);
-  $("historyBody").innerHTML=rows.map(t=>`
+  const page=rows.slice(0,histShown);
+  $("historyBody").innerHTML=page.map(t=>`
     <tr>
       <td>${new Date(t.date+"T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})}</td>
       <td><strong>${escapeHtml(t.note)}</strong><span class="sub">${t.type==="income"?"Uang Masuk":"Uang Keluar"}</span></td>
@@ -836,6 +847,12 @@ function renderHistory(){
     </tr>`).join("");
   $("empty").style.display=rows.length?"none":"block";
   $("historyCount").textContent=rows.length+" transaksi";
+  var __mb=document.getElementById("historyMore");
+  if(rows.length>histShown){
+    if(!__mb){__mb=document.createElement("div");__mb.id="historyMore";__mb.style.cssText="text-align:center;margin:14px 0";$("historyBody").closest("table").after(__mb);}
+    __mb.innerHTML='<button type="button" class="btn ghost" onclick="histShown+=100;renderHistory()">Muat 100 lagi ('+histShown+' dari '+rows.length+')</button>';
+    __mb.style.display="block";
+  }else if(__mb){__mb.style.display="none";}
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 
