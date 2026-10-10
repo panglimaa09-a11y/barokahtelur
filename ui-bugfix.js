@@ -47,21 +47,10 @@
     document.head.appendChild(s);
   }
 
-  function loadProofTransfer(){
-    if(window.__buktiTfScriptLoaded)return;
-    window.__buktiTfScriptLoaded=true;
-    const s=document.createElement('script');
-    s.src='bukti-transfer-supabase.js?v=1';
-    s.async=false;
-    s.onload=function(){window.dispatchEvent(new Event('barokah:bukti-tf-ready'));};
-    s.onerror=function(){console.error('[Barokah] gagal memuat bukti-transfer-supabase.js');};
-    document.head.appendChild(s);
-  }
-
+  /* DIHAPUS 10 Okt 2026 atas perintah Tuan: fitur Bukti Transfer dihapus total dari aplikasi. */
   function start(){
     clean();
     loadStableDebt();
-    loadProofTransfer();
     setTimeout(clean,250);
     setTimeout(clean,1000);
     setTimeout(clean,2500);
