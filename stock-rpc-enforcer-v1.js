@@ -44,13 +44,30 @@
   // Bulk reset uses one atomic RPC. After the database is emptied, also purge
   // every legacy local-storage stock cache so an old browser state cannot
   // repopulate the screen after refresh.
+  // DIPERBAIKI 12 Okt 2026: fallback ke REST DELETE berfilter bila RPC gagal
+  // (mis. fungsi live di Supabase masih versi lama tanpa WHERE di cabang admin).
+  function rpcNeedsFallback(err){
+    const m=String((err&&(err.message||err.code||err))||'').toLowerCase();
+    return m.includes('where clause')||m.includes('21000')||m.includes('does not exist')||m.includes('pgrst202')||m.includes('p0001');
+  }
   async function clearAllSafe(){
     const sb=SB();
-    await getUser();
+    const u=await getUser();
     if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return false;
 
-    const r=await sb.rpc('clear_own_stock_movements');
-    if(r.error)throw r.error;
+    try{
+      const r=await sb.rpc('clear_own_stock_movements');
+      if(r.error)throw r.error;
+    }catch(rpcErr){
+      if(!rpcNeedsFallback(rpcErr))throw rpcErr;
+      // Fallback: REST DELETE berfilter dummy (lolos pg-safeupdate; RLS tetap membatasi hak user).
+      const isAdmin=await (async()=>{try{const x=await sb.rpc('is_admin');return !x.error&&x.data===true;}catch(e){return false;}})();
+      let q=sb.from('stock_movements').delete();
+      if(isAdmin)q=q.neq('id','00000000-0000-0000-0000-000000000000');
+      else q=q.eq('user_id',u.id);
+      const del=await q;
+      if(del.error)throw del.error;
+    }
 
     // Clear browser caches immediately and again after cloud refresh.
     resetLocalStockState();

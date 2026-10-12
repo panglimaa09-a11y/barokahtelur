@@ -33,7 +33,29 @@
   async function saveEditFromForm(type){const sb=SB(),u=await currentUser();if(!sb||!u)return;const row=sharedStockRows.find(r=>String(r.id)===String(editingId));if(!row){alert('Data stok yang diedit tidak ditemukan.');return;}let q,unit,note;if(type==='Masuk'){q=parseInputNumber($('stockIn')?.value);unit=$('stockInUnit')?.value.trim();note=$('stockInNote')?.value.trim();}else if(type==='Keluar'){q=parseInputNumber($('stockOut')?.value);unit=$('stockOutUnit')?.value.trim();note=$('stockOutNote')?.value.trim();}else if(type==='Retak'){q=parseInputNumber($('badEggs')?.value);unit=$('badEggsUnit')?.value.trim()||'Butir';note='Telur retak';}else{q=parseInputNumber($('unfitEggs')?.value);unit=$('unfitEggsUnit')?.value.trim()||'Butir';note='Telur tidak layak';}if(!Number.isFinite(q)||q<=0){alert('Masukkan jumlah yang benar.');return;}if(!unit){alert('Isi satuan.');return;}if((type==='Masuk'||type==='Keluar')&&!note){alert('Isi keterangan.');return;}const delta=q*factor(unit)*(type==='Masuk'?1:-1),others=sharedStockRows.filter(r=>String(r.id)!==String(row.id)),otherSaldo=saldo(others);if(delta<0&&Math.abs(delta)>otherSaldo){alert('Stok Gudang tidak mencukupi untuk perubahan ini. Stok tersedia setelah mengabaikan data yang diedit: '+fmt(otherSaldo)+' Butir.');return;}try{let query=sb.from('stock_movements').update({qty:q,unit,movement_type:type,delta_butir:delta,note}).eq('id',row.id);if(!(await admin()))query=query.eq('user_id',u.id);const {error}=await query;if(error)throw error;Object.assign(row,{qty:q,unit,movement_type:type,delta_butir:delta,note});await recalcBalances();try{localStorage.setItem('barokah_stock_history_v53',JSON.stringify(sharedStockRows));}catch(e){}editingId=null;lastSignature='';hideEdit();render();if(typeof toast==='function')toast('Stok berhasil diedit dan disimpan ke database.');}catch(err){alert('Gagal menyimpan perubahan stok: '+(err.message||err));}}
   async function recalcBalances(){const sb=SB();if(!sb||!sharedStockRows.length)return;const ordered=sort(sharedStockRows);let n=0;const isAdmin=await admin();for(const row of ordered){n+=Number(row.delta_butir||0);if(Number(row.saldo_after_butir||0)!==n){row.saldo_after_butir=n;let q=sb.from('stock_movements').update({saldo_after_butir:n}).eq('id',row.id);if(!isAdmin){const u=await currentUser();q=q.eq('user_id',u.id);}const {error}=await q;if(error)throw error;}}}
   async function remove(id){const sb=SB(),u=await currentUser();if(!sb||!u)return;const row=sharedStockRows.find(r=>String(r.id)===String(id));if(!row)return;if(!confirm('Hapus riwayat stok ini? Data yang dihapus tidak bisa dikembalikan dari aplikasi.'))return;try{let q=sb.from('stock_movements').delete().eq('id',id);if(!(await admin()))q=q.eq('user_id',u.id);const {error}=await q;if(error)throw error;sharedStockRows=sharedStockRows.filter(r=>String(r.id)!==String(id));if(String(editingId)===String(id)){editingId=null;hideEdit();}lastSignature='';await recalcBalances();render();if(typeof toast==='function')toast('Riwayat stok berhasil dihapus.');}catch(err){alert('Gagal menghapus stok: '+(err.message||err));}}
-  async function clear(){const sb=SB(),u=await currentUser();if(!sb||!u)return;if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return;try{let q=sb.from('stock_movements').delete();if(!(await admin()))q=q.eq('user_id',u.id);const {error}=await q;if(error)throw error;sharedStockRows=[];editingId=null;lastSignature='';hideEdit();render();alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');}catch(err){alert('Gagal menghapus riwayat stok: '+(err.message||err));}}
+  /* DIPERBAIKI 12 Okt 2026: pakai RPC atomik (kebal pg-safeupdate) + fallback REST berfilter.
+     Versi lama: admin -> .delete() tanpa filter -> PostgREST 21000 "DELETE requires a WHERE clause". */
+  async function clearViaRpc(sb){
+    const r=await sb.rpc('clear_own_stock_movements');
+    if(r.error)throw r.error;
+    return r.data;
+  }
+  async function clearViaRest(sb,u){
+    const isAdmin=await admin();
+    let q=sb.from('stock_movements').delete();
+    if(!isAdmin)q=q.eq('user_id',u.id);
+    else q=q.neq('id','00000000-0000-0000-0000-000000000000'); /* filter dummy: lolos pg-safeupdate, RLS tetap berlaku */
+    const {error}=await q;
+    if(error)throw error;
+  }
+  function clearNeedsFallback(err){
+    const m=String((err&&(err.message||err.code||err))||'').toLowerCase();
+    return m.includes('where clause')||m.includes('21000')||m.includes('does not exist')||m.includes('pgrst202')||m.includes('p0001');
+  }
+  async function clear(){const sb=SB(),u=await currentUser();if(!sb||!u)return;if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return;try{
+    try{await clearViaRpc(sb);}
+    catch(rpcErr){if(!clearNeedsFallback(rpcErr))throw rpcErr;await clearViaRest(sb,u);}
+    sharedStockRows=[];editingId=null;lastSignature='';hideEdit();render();alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');}catch(err){alert('Gagal menghapus riwayat stok: '+(err.message||err));}}
   document.addEventListener('click',e=>{const edit=e.target.closest?.('[data-stock-edit]');if(edit){e.preventDefault();beginEdit(edit.getAttribute('data-stock-edit'));return;}const del=e.target.closest?.('[data-stock-delete]');if(del){e.preventDefault();remove(del.getAttribute('data-stock-delete'));}});
   window.addStockIn=()=>add('Masuk');window.addStockOut=()=>add('Keluar');window.addBadEggs=()=>add('Retak');window.addUnfitEggs=()=>add('Tidak Layak');window.editStockMovement=beginEdit;window.deleteStockMovement=remove;window.clearStockHistory=clear;window.getWarehouseStock=()=>saldo(sharedStockRows);window.renderStock=render;
   const oldSync=window.barokahCloudSync;window.barokahCloudSync=async function(){if(typeof oldSync==='function')await oldSync();await refreshShared();};
