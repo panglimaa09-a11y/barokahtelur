@@ -1285,6 +1285,23 @@ setInterval(updateLiveDateTime,1000);</script>
         '<script src="stock-cloud-fix.js"></script>
 <script src="ui-bugfix.js" data-barokah-ui-cleanup="1"></script>
 
+
+<script>
+/* Jam dashboard mandiri — terisolasi dari error script lain */
+(function(){
+  function tick(){
+    try{
+      var now=new Date();
+      var d=document.getElementById("liveDate");
+      var t=document.getElementById("liveTime");
+      if(d){d.textContent=now.toLocaleDateString("id-ID",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});}
+      if(t){t.textContent=now.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).replace(/\./g,":");}
+    }catch(e){}
+  }
+  tick();
+  setInterval(tick,1000);
+})();
+</script>
 </body></html>';
 
       // Do NOT use window.open/about:blank. Print through an isolated iframe
@@ -2209,9 +2226,6 @@ window.barokahStockSkeleton=function(){
   box.innerHTML='<div class="barokah-skeleton"><div class="barokah-skeleton-row"></div><div class="barokah-skeleton-row"></div><div class="barokah-skeleton-row"></div><div class="barokah-skeleton-row"></div></div>';
 };
 </script>
-
-
-
 
 <script src="restore-cloud-fix.js"></script>
 
