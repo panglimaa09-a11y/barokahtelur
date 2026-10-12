@@ -57,6 +57,25 @@
     catch(rpcErr){if(!clearNeedsFallback(rpcErr))throw rpcErr;await clearViaRest(sb,u);}
     sharedStockRows=[];editingId=null;lastSignature='';hideEdit();render();alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');}catch(err){alert('Gagal menghapus riwayat stok: '+(err.message||err));}}
   document.addEventListener('click',e=>{const edit=e.target.closest?.('[data-stock-edit]');if(edit){e.preventDefault();beginEdit(edit.getAttribute('data-stock-edit'));return;}const del=e.target.closest?.('[data-stock-delete]');if(del){e.preventDefault();remove(del.getAttribute('data-stock-delete'));}});
+  /* DITAMBAHKAN 12 Okt 2026: Reset Data Stok Lama (tombol di Dashboard).
+     Membersihkan cache stok lawas di perangkat lalu memuat ulang dari database. */
+  window.resetLegacyStock=async function(){
+    if(!confirm('Reset data stok lama di perangkat ini? Data di database TIDAK dihapus, hanya cache lokal yang dibersihkan lalu dimuat ulang.'))return;
+    try{
+      const legacyKeys=[
+        'barokah_stock_v49','barokah_stock_v50','barokah_stock_v51_butir',
+        'barokah_stock_history_v49','barokah_stock_history_v50','barokah_stock_history_v51',
+        'barokah_bad_v59','barokah_unfit_v59','barokah_bad_eggs_v1'
+      ];
+      legacyKeys.forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+      lastSignature='';
+      if(typeof window.barokahCloudSync==='function')await window.barokahCloudSync();
+      else await refreshShared();
+      render();
+      if(typeof toast==='function')toast('Data stok lama dibersihkan, dimuat ulang dari database.');
+      else alert('Data stok lama dibersihkan, dimuat ulang dari database.');
+    }catch(err){alert('Gagal reset data stok: '+(err.message||err));}
+  };
   window.addStockIn=()=>add('Masuk');window.addStockOut=()=>add('Keluar');window.addBadEggs=()=>add('Retak');window.addUnfitEggs=()=>add('Tidak Layak');window.editStockMovement=beginEdit;window.deleteStockMovement=remove;window.clearStockHistory=clear;window.getWarehouseStock=()=>saldo(sharedStockRows);window.renderStock=render;
   const oldSync=window.barokahCloudSync;window.barokahCloudSync=async function(){if(typeof oldSync==='function')await oldSync();await refreshShared();
 /* DIPERBAIKI 12 Okt 2026: paksa render ulang dgn tombol Edit/Hapus.

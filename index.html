@@ -418,6 +418,14 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
   </div>
   <button class="btn primary" type="button" onclick="showPage('stock')">Buka Stok Gudang</button>
 </div>
+<div class="stock-quick-card" id="resetDataCard" style="margin-top:12px">
+  <div>
+    <span class="eyebrow">PENGATURAN</span>
+    <h3>🧹 Reset Data</h3>
+    <p>Bersihkan data stok lama di perangkat ini dan muat ulang dari database.</p>
+  </div>
+  <button class="btn ghost" id="repairStockBtn" type="button" onclick="resetLegacyStock()">🧹 Reset Data Stok Lama</button>
+</div>
 
       <div class="kpis">
         <article class="kpi in"><small>Total Pemasukan</small><strong id="totalIncome">Rp 0</strong><span>Pemasukan</span></article>
@@ -1428,7 +1436,7 @@ BAROKAH TELUR •  • Tahap Revisi
         <h3>Riwayat Stok Gudang</h3>
         <p class="stock-help">Tanggal · Produk · Jenis · Jumlah · Konversi · Saldo Setelah · Keterangan</p>
       </div>
-      <button class="btn ghost" type="button" onclick="clearStockHistory()">🗑️ Hapus Riwayat</button><button id="repairStockBtn" class="btn ghost" type="button" onclick="resetLegacyStock()">🧹 Reset Data Stok Lama</button><small id="stock-history-delete-note" style="display:block;margin-top:6px;color:#8a5a00;font-size:11px">
+      <button class="btn ghost" type="button" onclick="clearStockHistory()">🗑️ Hapus Riwayat</button><small id="stock-history-delete-note" style="display:block;margin-top:6px;color:#8a5a00;font-size:11px">
 Menghapus riwayat akan mengosongkan dan menghitung ulang saldo stok pada perangkat ini.
 </small>
     </div>
@@ -1440,19 +1448,6 @@ Menghapus riwayat akan mengosongkan dan menghitung ulang saldo stok pada perangk
     <option value="Lembar"></option><option value="Papan"></option><option value="Ball"></option>
   </datalist>
 </section>
-  <div class="card stock-history-card">
-    <div class="stock-history-head">
-      <div>
-        <h3>Riwayat Stok Gudang</h3>
-        <p class="stock-help">Semua perubahan stok tercatat otomatis: stok masuk, stok keluar, dan telur retak/tidak layak.</p>
-      </div>
-      <button class="btn ghost" type="button" onclick="clearStockHistory()">🗑️ Hapus Riwayat Stok</button>
-    </div>
-    <div id="stockHistory">
-      <div class="stock-history-empty">Belum ada riwayat stok.</div>
-    </div>
-  </div>
-
 <script id="stock-engine-v53">
 (function(){
   const STOCK_KEY="barokah_stock_v53_butir";
