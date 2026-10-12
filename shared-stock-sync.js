@@ -58,7 +58,12 @@
     sharedStockRows=[];editingId=null;lastSignature='';hideEdit();render();alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');}catch(err){alert('Gagal menghapus riwayat stok: '+(err.message||err));}}
   document.addEventListener('click',e=>{const edit=e.target.closest?.('[data-stock-edit]');if(edit){e.preventDefault();beginEdit(edit.getAttribute('data-stock-edit'));return;}const del=e.target.closest?.('[data-stock-delete]');if(del){e.preventDefault();remove(del.getAttribute('data-stock-delete'));}});
   window.addStockIn=()=>add('Masuk');window.addStockOut=()=>add('Keluar');window.addBadEggs=()=>add('Retak');window.addUnfitEggs=()=>add('Tidak Layak');window.editStockMovement=beginEdit;window.deleteStockMovement=remove;window.clearStockHistory=clear;window.getWarehouseStock=()=>saldo(sharedStockRows);window.renderStock=render;
-  const oldSync=window.barokahCloudSync;window.barokahCloudSync=async function(){if(typeof oldSync==='function')await oldSync();await refreshShared();};
+  const oldSync=window.barokahCloudSync;window.barokahCloudSync=async function(){if(typeof oldSync==='function')await oldSync();await refreshShared();
+/* DIPERBAIKI 12 Okt 2026: paksa render ulang dgn tombol Edit/Hapus.
+   oldSync (cloud-sync.js) me-render tabel TANPA kolom Aksi; refreshShared()
+   me-skip render bila data tidak berubah (optimasi signature), sehingga
+   tombol bisa hilang. render() paksa memastikan tombol selalu ada. */
+try{render();}catch(e){console.error('Shared stock force render:',e);}};
   setTimeout(()=>refreshShared(),1200);
   setInterval(()=>refreshShared(),2000);
 })();
