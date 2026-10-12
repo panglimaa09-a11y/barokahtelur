@@ -12,6 +12,12 @@
   async function user(){const sb=window.barokahSupabase;if(!sb)return null;const r=await sb.auth.getUser();return r.data&&r.data.user?r.data.user:null;}
   async function load(){const sb=window.barokahSupabase,u=await user();if(!sb||!u)return;const r=await sb.from('stock_movements').select('*').eq('user_id',u.id).order('created_at',{ascending:true}).order('id',{ascending:true});if(r.error){console.error('Stock cloud load:',r.error);return;}rows=r.data||[];render();}
   function render(){
+    /* KONSOLIDASI 12 Okt 2026 (Level 1): jika renderer kanonis sudah aktif,
+       jangan timpa tabel dengan versi tanpa tombol. Data tetap aman. */
+    if(window.__barokahStockCanonicalRenderer && typeof window.renderStock==='function' && window.renderStock!==render){
+      try{window.renderStock();}catch(e){}
+      return;
+    }
     const rr=running(rows),n=total();
     if($('stockWarehouse'))$('stockWarehouse').textContent=saldo(n);
     if($('stockAutoPreview'))$('stockAutoPreview').textContent='Saldo saat ini: '+saldo(n)+'. Stok tersimpan di database online.';

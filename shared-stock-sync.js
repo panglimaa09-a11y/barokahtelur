@@ -89,6 +89,7 @@
       else alert('Data stok lama dibersihkan, dimuat ulang dari database.');
     }catch(err){alert('Gagal reset data stok: '+(err.message||err));}
   };
+  window.__barokahStockCanonicalRenderer=true;
   window.addStockIn=()=>add('Masuk');window.addStockOut=()=>add('Keluar');window.addBadEggs=()=>add('Retak');window.addUnfitEggs=()=>add('Tidak Layak');window.editStockMovement=beginEdit;window.deleteStockMovement=remove;window.clearStockHistory=clear;window.getWarehouseStock=()=>saldo(sharedStockRows);window.renderStock=render;
   const oldSync=window.barokahCloudSync;window.barokahCloudSync=async function(){if(typeof oldSync==='function')await oldSync();await refreshShared();
 /* DIPERBAIKI 12 Okt 2026: paksa render ulang dgn tombol Edit/Hapus.
@@ -97,5 +98,8 @@
    tombol bisa hilang. render() paksa memastikan tombol selalu ada. */
 try{render();}catch(e){console.error('Shared stock force render:',e);}};
   setTimeout(()=>refreshShared(),1200);
-  setInterval(()=>refreshShared(),2000);
+  /* KONSOLIDASI 12 Okt 2026 (Level 1): interval 2 dtk -> 30 dtk.
+     Polling tiap 2 dtk menghantam database terus-menerus (boros kuota + baterai HP).
+     Refresh on-demand sudah ditangani via barokahCloudSync() wrapper + setelah tiap operasi. */
+  setInterval(()=>refreshShared(),30000);
 })();
