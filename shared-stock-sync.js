@@ -59,8 +59,21 @@
   document.addEventListener('click',e=>{const edit=e.target.closest?.('[data-stock-edit]');if(edit){e.preventDefault();beginEdit(edit.getAttribute('data-stock-edit'));return;}const del=e.target.closest?.('[data-stock-delete]');if(del){e.preventDefault();remove(del.getAttribute('data-stock-delete'));}});
   /* DITAMBAHKAN 12 Okt 2026: Reset Data Stok Lama (tombol di Dashboard).
      Membersihkan cache stok lawas di perangkat lalu memuat ulang dari database. */
-  window.resetLegacyStock=async function(){
-    if(!confirm('Reset data stok lama di perangkat ini? Data di database TIDAK dihapus, hanya cache lokal yang dibersihkan lalu dimuat ulang.'))return;
+  /* DIPERBARUI 12 Okt 2026: warning inline (bukan popup) sesuai permintaan Tuan.
+     Alur: klik Reset -> muncul peringatan backup di halaman ->
+     klik "Sudah, Lanjutkan" -> reset jalan. */
+  window.resetLegacyStock=function(){
+    const w=document.getElementById('resetWarning');
+    if(w){w.style.display='block';try{w.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}}
+    else alert('Elemen peringatan tidak ditemukan.');
+  };
+  window.cancelResetLegacyStock=function(){
+    const w=document.getElementById('resetWarning');
+    if(w)w.style.display='none';
+  };
+  window.confirmResetLegacyStock=async function(){
+    const w=document.getElementById('resetWarning');
+    if(w)w.style.display='none';
     try{
       const legacyKeys=[
         'barokah_stock_v49','barokah_stock_v50','barokah_stock_v51_butir',

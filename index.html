@@ -425,6 +425,14 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
     <p>Bersihkan data stok lama di perangkat ini dan muat ulang dari database.</p>
   </div>
   <button class="btn ghost" id="repairStockBtn" type="button" onclick="resetLegacyStock()">🧹 Reset Data Stok Lama</button>
+  <div id="resetWarning" style="display:none;margin-top:12px;padding:14px;border:1px solid #e6c75a;border-radius:10px;background:#fff8d9;color:#5c4a00">
+    <b>⚠️ Peringatan</b>
+    <p style="margin:6px 0;font-size:13px">Apakah Anda sudah <b>mencadangkan (backup)</b> data?<br>Reset akan membersihkan data stok lama di perangkat ini, lalu memuat ulang dari database.</p>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn primary" type="button" onclick="confirmResetLegacyStock()">✅ Sudah, Lanjutkan Reset</button>
+      <button class="btn ghost" type="button" onclick="cancelResetLegacyStock()">Batal</button>
+    </div>
+  </div>
 </div>
 
       <div class="kpis">
@@ -2181,13 +2189,10 @@ document.addEventListener("DOMContentLoaded",function(){
 
 
 
-
-
-
+<script src="restore-cloud-fix.js"></script>
 
 
 
 <script src="operasional-sync-v70.4.9.js"></script>
-<script src="restore-cloud-fix.js"></script>
 </body>
 </html>
