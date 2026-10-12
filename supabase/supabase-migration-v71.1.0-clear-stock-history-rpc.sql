@@ -26,7 +26,8 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtext('barokah_telur_warehouse_stock'));
 
   IF v_admin THEN
-    DELETE FROM public.stock_movements;
+    -- WHERE true: lolos pg-safeupdate (Supabase menolak DELETE tanpa WHERE).
+    DELETE FROM public.stock_movements WHERE true;
   ELSE
     DELETE FROM public.stock_movements
     WHERE user_id = v_uid;
