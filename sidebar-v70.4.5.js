@@ -41,19 +41,19 @@
       <div class="bs-brand"><div class="bs-logo">BT</div><div><strong>Barokah Telur</strong><span>Pembukuan & Manajemen Usaha</span></div></div>
       <div class="bs-section">Menu Utama</div>
       <div class="bs-menu">
-        <button class="bs-btn active" data-page="dashboard"><span class="bs-icon">🏠</span><span class="bs-label">Dashboard</span></button>
-        <button class="bs-btn" data-page="stock"><span class="bs-icon">📦</span><span class="bs-label">Stok Gudang</span></button>
-        <button class="bs-btn" data-page="income"><span class="bs-icon">💰</span><span class="bs-label">Uang Masuk</span></button>
-        <button class="bs-btn" data-page="expense"><span class="bs-icon">💸</span><span class="bs-label">Uang Keluar</span></button>
-        <button class="bs-btn" data-page="history"><span class="bs-icon">🧾</span><span class="bs-label">Riwayat</span></button>
-        <button class="bs-btn" data-page="debt"><span class="bs-icon">🤝</span><span class="bs-label">Utang Piutang</span></button>
-        <button class="bs-btn" data-page="operasional"><span class="bs-icon">🏢</span><span class="bs-label">Operasional</span></button>
+        <button class="bs-btn active" data-page="dashboard"><span class="bs-icon"><i class="fa-solid fa-house"></i></span><span class="bs-label">Dashboard</span></button>
+        <button class="bs-btn" data-page="stock"><span class="bs-icon"><i class="fa-solid fa-boxes-stacked"></i></span><span class="bs-label">Stok Gudang</span></button>
+        <button class="bs-btn" data-page="income"><span class="bs-icon"><i class="fa-solid fa-circle-down"></i></span><span class="bs-label">Uang Masuk</span></button>
+        <button class="bs-btn" data-page="expense"><span class="bs-icon"><i class="fa-solid fa-circle-up"></i></span><span class="bs-label">Uang Keluar</span></button>
+        <button class="bs-btn" data-page="history"><span class="bs-icon"><i class="fa-solid fa-receipt"></i></span><span class="bs-label">Riwayat</span></button>
+        <button class="bs-btn" data-page="debt"><span class="bs-icon"><i class="fa-solid fa-handshake"></i></span><span class="bs-label">Utang Piutang</span></button>
+        <button class="bs-btn" data-page="operasional"><span class="bs-icon"><i class="fa-solid fa-briefcase"></i></span><span class="bs-label">Operasional</span></button>
       </div>
       <div class="bs-section">Pengaturan & Analisis</div>
       <div class="bs-menu">
-        <button class="bs-btn" data-page="profile"><span class="bs-icon">👤</span><span class="bs-label">Profil</span></button>
-        <button class="bs-btn" data-action="admin"><span class="bs-icon">🔐</span><span class="bs-label">Admin</span></button>
-        <button class="bs-btn" data-page="research"><span class="bs-icon">🔎</span><span class="bs-label">Riset Data</span></button>
+        <button class="bs-btn" data-page="profile"><span class="bs-icon"><i class="fa-solid fa-user"></i></span><span class="bs-label">Profil</span></button>
+        <button class="bs-btn" data-action="admin"><span class="bs-icon"><i class="fa-solid fa-lock"></i></span><span class="bs-label">Admin</span></button>
+        <button class="bs-btn" data-page="research"><span class="bs-icon"><i class="fa-solid fa-magnifying-glass"></i></span><span class="bs-label">Riset Data</span></button>
       </div>
       <div class="bs-bottom"><div class="bs-user">Sistem Pembukuan & Manajemen Usaha<br>Barokah Telur</div></div>`;
     document.body.appendChild(side);
