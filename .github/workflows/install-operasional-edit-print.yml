@@ -7,6 +7,12 @@ on:
 permissions:
   contents: write
 
+# Serialize with the other install-* workflows so concurrent
+# git pushes from this workflow family never race each other.
+concurrency:
+  group: barokahtelur-install-fixes
+  cancel-in-progress: false
+
 jobs:
   install:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
@@ -45,4 +51,5 @@ jobs:
             exit 0
           fi
           git commit -m 'fix: load operational edit and print module [skip ci]'
+          git pull --rebase origin main
           git push origin main

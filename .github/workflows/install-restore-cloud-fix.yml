@@ -7,6 +7,12 @@ on:
 permissions:
   contents: write
 
+# Serialize with the other install-* workflows so concurrent
+# git pushes from this workflow family never race each other.
+concurrency:
+  group: barokahtelur-install-fixes
+  cancel-in-progress: false
+
 jobs:
   install:
     runs-on: ubuntu-latest
@@ -37,6 +43,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "fix: enable Supabase restore"
+            git commit -m "fix: enable Supabase restore [skip ci]"
+            git pull --rebase origin main
             git push
           fi
