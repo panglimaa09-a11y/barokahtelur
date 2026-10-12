@@ -22,6 +22,14 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+      - name: Sync to latest main
+        # Sync FIRST, before modifying. A pull --rebase AFTER the local
+        # commit conflicts when another install-* workflow already pushed
+        # an index.html change (both edit near </body>). The python step
+        # below is idempotent, so re-running it on a fresh base is safe.
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
       - name: Wire operational fix into index
         shell: python
         run: |
@@ -51,5 +59,4 @@ jobs:
             exit 0
           fi
           git commit -m 'fix: load operational edit and print module [skip ci]'
-          git pull --rebase origin main
           git push origin main

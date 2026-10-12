@@ -20,6 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Sync to latest main
+        # Sync FIRST, before modifying. A pull --rebase AFTER the local
+        # commit conflicts when another install-* workflow already pushed
+        # an index.html change (both edit near </body>). The python step
+        # below is idempotent, so re-running it on a fresh base is safe.
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
       - name: Inject restore cloud fix
         shell: python
         run: |
@@ -44,6 +53,5 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "fix: enable Supabase restore [skip ci]"
-            git pull --rebase origin main
-            git push
+            git push origin main
           fi
