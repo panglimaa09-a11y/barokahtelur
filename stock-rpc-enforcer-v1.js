@@ -75,6 +75,7 @@
     resetLocalStockState();
     if(typeof window.renderStock==='function')await window.renderStock();
 
+    try{await sb.rpc('reset_invoice_number');}catch(e){console.warn('Reset invoice:',e);}
     if(typeof window.toast==='function')window.toast('Seluruh riwayat stok berhasil dihapus. Stok Gudang kembali 0 Butir.');
     else alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');
     return true;
