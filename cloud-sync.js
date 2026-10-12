@@ -29,7 +29,10 @@
     const pre=type==='income'?'income':'expense';const note=$(pre+'Note').value.trim(),price=parsePriceInput($(pre+'Price').value),unit=$(pre+'Unit').value,qty=parseInputNumber($(pre+'Qty').value),date=$(pre+'Date').value;
     if(!note){alert('Keterangan belum diisi.');return;}if(!date){alert('Tanggal belum diisi.');return;}if(!Number.isFinite(price)||price<0){alert('Harga belum diisi atau format harga tidak valid.');return;}if(!Number.isFinite(qty)||qty<=0){alert('Jumlah belum diisi atau format jumlah tidak valid.');return;}if((unit==='Ikat'||unit==='Butir')&&!Number.isInteger(qty)){alert('Jumlah untuk Ikat atau Butir harus berupa angka bulat.');return;}
     const sb=requireClient(),u=await currentUser();if(!u){alert('Sesi database sudah berakhir. Silakan login ulang.');return;}
-    const editId=type==='income'?editingIncome:editingExpense;const payload={type,note,price,unit,qty,total:Number((price*qty).toFixed(3)),transaction_date:date,user_id:u.id};
+    const editId=type==='income'?editingIncome:editingExpense;
+    let _invNo='';
+    if(!editId){try{const _r=await sb.rpc('next_invoice_number');if(!_r.error&&_r.data)_invNo=_r.data;}catch(e){console.warn('Invoice auto-number gagal:',e);}}
+    const payload={type,note,price,unit,qty,total:Number((price*qty).toFixed(3)),transaction_date:date,user_id:u.id,invoice_no:_invNo||null};
     try{
       if(editId){const {data,error}=await sb.from('transactions').update(payload).eq('id',editId).eq('user_id',u.id).select('*').single();if(error)throw error;const idx=state.findIndex(x=>String(x.id)===String(editId));if(idx>=0)state[idx]={id:data.id,note:data.note,price:Number(data.price),unit:data.unit,qty:Number(data.qty),total:Number(data.total),type:data.type,date:data.transaction_date,createdAt:new Date(data.created_at).getTime()};}
       else{const {data,error}=await sb.from('transactions').insert(payload).select('*').single();if(error)throw error;state.push({id:data.id,note:data.note,price:Number(data.price),unit:data.unit,qty:Number(data.qty),total:Number(data.total),type:data.type,date:data.transaction_date,createdAt:new Date(data.created_at).getTime()});}

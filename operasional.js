@@ -55,9 +55,12 @@
   async function save(ev){
     ev.preventDefault();
     try{const u=await user();const amount=Number(digits(document.getElementById('opAmount').value));const description=document.getElementById('opDescription').value.trim();if(!description||!Number.isFinite(amount)||amount<=0){alert('Isi keterangan dan nominal yang benar.');return;}
-      const payload={user_id:u.id,kind:document.getElementById('opKind').value,category:document.getElementById('opCategory').value,description,transaction_date:document.getElementById('opDate').value||today(),amount,note:document.getElementById('opNote').value.trim()};
+      // Nomor invoice otomatis: INV-YYYYMMDD-NNN
+      let invNo='';
+      try{const r=await SB().rpc('next_invoice_number');if(!r.error&&r.data)invNo=r.data;}catch(e){console.warn('Invoice auto-number gagal:',e);}
+      const payload={user_id:u.id,kind:document.getElementById('opKind').value,category:document.getElementById('opCategory').value,description,transaction_date:document.getElementById('opDate').value||today(),amount,note:document.getElementById('opNote').value.trim(),reference_no:invNo};
       const {error}=await SB().from('operational_transactions').insert(payload);if(error)throw error;
-      document.getElementById('opForm').reset();document.getElementById('opDate').value=today();document.getElementById('opAmount').value='';await load();await dashboard();alert('Transaksi operasional berhasil disimpan.');
+      document.getElementById('opForm').reset();document.getElementById('opDate').value=today();if(invNo){var rf=document.getElementById('opRef');if(rf)rf.value=invNo;}document.getElementById('opAmount').value='';await load();await dashboard();alert('Transaksi operasional berhasil disimpan.');
     }catch(e){alert('Gagal menyimpan: '+(e.message||e));}
   }
 

@@ -100,7 +100,8 @@
         alert('Periksa nama, jumlah, total, dan pembayaran.');
         return;
       }
-      const payload={user_id:u.id,kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:party,phone:fieldValue(['debtPhone']),reference_no:fieldValue(['debtRef']),debt_date:fieldValue(['debtDate'],today())||today(),due_date:fieldValue(['debtDue'])||null,total_amount:total,paid_amount:paid,quantity,unit,note:fieldValue(['debtNote'])};
+      const _invNo=await (async()=>{try{const r=await SB().rpc('next_invoice_number');return (!r.error&&r.data)?r.data:'';}catch(e){return '';}})();
+      const payload={user_id:u.id,kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:party,phone:fieldValue(['debtPhone']),reference_no:_invNo||fieldValue(['debtRef']),debt_date:fieldValue(['debtDate'],today())||today(),due_date:fieldValue(['debtDue'])||null,total_amount:total,paid_amount:paid,quantity,unit,note:fieldValue(['debtNote'])};
       const first=await SB().from('debts_receivables').insert(payload);
       if(first.error){
         const msg=String(first.error.message||first.error.details||'');
