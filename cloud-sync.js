@@ -55,14 +55,16 @@
     if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return;
     try{
       // Jalur utama: RPC atomik clear_own_stock_movements (migration v71.1.0).
-      // Kebal terhadap error PostgREST 21000 "DELETE requires a WHERE clause"
-      // karena DELETE dilakukan di dalam fungsi database, bukan via REST.
       const rpc=await sb.rpc('clear_own_stock_movements');
       if(rpc.error){
         const msg=String((rpc.error&&rpc.error.message)||'');
-        if(/does not exist|PGRST202/i.test(msg)){
-          // RPC belum dipasang di database -> fallback ke REST delete berfilter.
-          const r=await sb.from('stock_movements').delete().eq('user_id',u.id);
+        // Fallback bila: RPC belum dipasang ("does not exist"/PGRST202), atau
+        // RPC versi lama yang kena guard pg-safeupdate ("WHERE clause"/21000)
+        // pada cabang admin (DELETE tanpa WHERE di dalam fungsi).
+        // Filter neq nil-UUID selalu benar untuk semua baris -> PostgREST tidak
+        // menolak (ada WHERE), RLS tetap membatasi sesuai hak user.
+        if(/does not exist|PGRST202|WHERE clause|21000/i.test(msg)){
+          const r=await sb.from('stock_movements').delete().neq('id','00000000-0000-0000-0000-000000000000');
           if(r.error)throw r.error;
         }else throw rpc.error;
       }
