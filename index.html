@@ -578,7 +578,7 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
 </section>
 <section id="page-history" class="page">
 <div class="card export-card">
-  <div class="export-title">💾 Simpan / Cetak Data</div>
+  <div class="export-title"><i class="fa-solid fa-floppy-disk"></i> Simpan / Cetak Data</div>
   <div class="export-actions">
     
     
@@ -587,8 +587,8 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
   <small class="export-help">Pilih sesuai kebutuhan. PDF menggunakan dialog cetak browser, sedangkan gambar disimpan sebagai PNG.</small>
 </div>
 <div class="history-actions">
-          <button class="btn primary" id="historySaveBtn" type="button">💾 Simpan Data</button>
-          <button class="btn danger" id="deleteAllBtn" type="button">🗑️ Hapus Semua Data</button>
+          <button class="btn primary" id="historySaveBtn" type="button"><i class="fa-solid fa-floppy-disk"></i> Simpan Data</button>
+          <button class="btn danger" id="deleteAllBtn" type="button"><i class="fa-solid fa-trash"></i> Hapus Semua Data</button>
         </div>
     <div class="hero"><span class="eyebrow">RIWAYAT</span><h1>Semua Catatan</h1><p>Keterangan, harga, satuan, jumlah, dan total ditampilkan terpisah.</p></div>
     <div class="card list-card">
@@ -867,7 +867,7 @@ function renderHistory(){
       <td>
         <button class="btn primary tx-note" type="button" title="Cetak nota transaksi ini" onclick="printTransactionNota(this.dataset.id)" data-id="${escapeHtml(String(t.id))}">🧾 Nota</button>
         <button class="btn ghost tx-edit" type="button" onclick="editTx(this.dataset.id)" data-id="${escapeHtml(String(t.id))}">✏️ Edit</button>
-        <button class="btn danger tx-delete" type="button" onclick="delTx(this.dataset.id)" data-id="${escapeHtml(String(t.id))}">🗑️ Hapus</button>
+        <button class="btn danger tx-delete" type="button" onclick="delTx(this.dataset.id)" data-id="${escapeHtml(String(t.id))}"><i class="fa-solid fa-trash"></i> Hapus</button>
       </td>
     </tr>`).join("");
   $("empty").style.display=rows.length?"none":"block";
@@ -1350,7 +1350,7 @@ BAROKAH TELUR •  • Tahap Revisi
   <div class="page-header">
     <div>
       <span class="eyebrow">INVENTORI</span>
-      <h2><i class="fa-solid fa-box"></i> Stok Gudang</h2><div class="stock-print-bar"><button id="printStockBtn" class="btn primary" type="button" onclick="printStockReport()">🖨️ Print Stok Gudang</button></div>
+      <h2><i class="fa-solid fa-box"></i> Stok Gudang</h2><div class="stock-print-bar"><button id="printStockBtn" class="btn primary" type="button" onclick="printStockReport()"><i class="fa-solid fa-print"></i> Print Stok Gudang</button></div>
       <p>Stok Gudang akan berubah otomatis setiap kali Stok Masuk, Stok Keluar, atau Telur Retak dicatat.</p>
     </div>
   </div>
@@ -2210,10 +2210,9 @@ window.barokahStockSkeleton=function(){
 };
 </script>
 
-
+<script src="restore-cloud-fix.js"></script>
 
 
 <script src="operasional-sync-v70.4.9.js" data-barokah-operational-sync-v7049="1"></script>
-<script src="restore-cloud-fix.js"></script>
 </body>
 </html>
