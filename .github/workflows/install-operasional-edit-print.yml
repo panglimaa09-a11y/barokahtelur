@@ -19,16 +19,21 @@ jobs:
       - name: Wire operational fix into index
         shell: python
         run: |
+          import re
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          tag = '<script src="operasional-sync-v70.4.9.js"></script>'
-          s = s.replace(tag, '')
+          canonical = '<script src="operasional-sync-v70.4.9.js" data-barokah-operational-sync-v7049="1"></script>'
+          # 1) Hapus SEMUA tag operasional-sync-v70.4.9.js (polos maupun canonical).
+          #    DIPERBAIKI 12 Okt 2026: versi lama hanya hapus tag polos exact-match,
+          #    sehingga tag canonical + tag polos menumpuk ganda setiap push.
+          s = re.sub(r'<script[^>]*src="operasional-sync-v70\.4\.9\.js"[^>]*>\s*</script>\s*', '', s)
+          # 2) Pasang SATU tag canonical tepat sebelum </body>.
           marker = '</body>'
           pos = s.rfind(marker)
           if pos < 0:
               raise SystemExit('index.html tidak memiliki </body>')
-          s = s[:pos] + '\n' + tag + '\n' + s[pos:]
+          s = s[:pos] + '\n' + canonical + '\n' + s[pos:]
           p.write_text(s, encoding='utf-8')
       - name: Commit generated wiring
         run: |
