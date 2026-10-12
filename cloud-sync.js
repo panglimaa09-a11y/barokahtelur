@@ -49,7 +49,27 @@
 
   async function addMovement(type){const sb=requireClient(),u=await currentUser();if(!u){alert('Sesi database belum aktif. Silakan login ulang.');return;}let q,unit,note;if(type==='Masuk'){q=parseInputNumber($('stockIn')?.value);unit=$('stockInUnit')?.value.trim();note=$('stockInNote')?.value.trim();}else if(type==='Keluar'){q=parseInputNumber($('stockOut')?.value);unit=$('stockOutUnit')?.value.trim();note=$('stockOutNote')?.value.trim();}else if(type==='Retak'){q=parseInputNumber($('badEggs')?.value);unit=$('badEggsUnit')?.value.trim()||'Butir';note='Telur retak';}else{q=parseInputNumber($('unfitEggs')?.value);unit=$('unfitEggsUnit')?.value.trim()||'Butir';note='Telur tidak layak';}if(!Number.isFinite(q)||q<=0){alert('Masukkan jumlah yang benar.');return;}if(!unit){alert('Isi satuan.');return;}if((type==='Masuk'||type==='Keluar')&&!note){alert('Isi keterangan.');return;}const current=stockSaldo(cloudStockRows),delta=q*stockFactor(unit)*(type==='Masuk'?1:-1);if(type!=='Masuk'&&Math.abs(delta)>current){alert('Stok Gudang tidak mencukupi. Stok saat ini '+current.toLocaleString('id-ID')+' Butir.');return;}const after=current+delta;try{const {data,error}=await sb.from('stock_movements').insert({user_id:u.id,product:'Telur Ayam Ras',movement_type:type,qty:q,unit,delta_butir:delta,saldo_after_butir:after,note}).select('*').single();if(error)throw error;cloudStockRows.push(data);renderCloudStock();if(type==='Masuk'){$('stockIn').value='';$('stockInNote').value='';}if(type==='Keluar'){$('stockOut').value='';$('stockOutNote').value='';}if(type==='Retak')$('badEggs').value='';if(type==='Tidak Layak')$('unfitEggs').value='';toastSafe('Perubahan stok tersimpan ke database.');}catch(err){alert('Gagal menyimpan stok: '+err.message);}}
   window.addStockIn=()=>addMovement('Masuk');window.addStockOut=()=>addMovement('Keluar');window.addBadEggs=()=>addMovement('Retak');window.addUnfitEggs=()=>addMovement('Tidak Layak');
-  window.clearStockHistory=async function(){const sb=requireClient(),u=await currentUser();if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return;try{const {error}=await sb.from('stock_movements').delete().eq('user_id',u.id);if(error)throw error;cloudStockRows=[];renderCloudStock();alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');}catch(err){alert('Gagal menghapus riwayat stok: '+err.message);}};
+  window.clearStockHistory=async function(){
+    const sb=requireClient(),u=await currentUser();
+    if(!u||!u.id){alert('Sesi login berakhir. Silakan login ulang lalu coba lagi.');return;}
+    if(!confirm('Hapus seluruh riwayat stok dan reset Stok Gudang?'))return;
+    try{
+      // Jalur utama: RPC atomik clear_own_stock_movements (migration v71.1.0).
+      // Kebal terhadap error PostgREST 21000 "DELETE requires a WHERE clause"
+      // karena DELETE dilakukan di dalam fungsi database, bukan via REST.
+      const rpc=await sb.rpc('clear_own_stock_movements');
+      if(rpc.error){
+        const msg=String((rpc.error&&rpc.error.message)||'');
+        if(/does not exist|PGRST202/i.test(msg)){
+          // RPC belum dipasang di database -> fallback ke REST delete berfilter.
+          const r=await sb.from('stock_movements').delete().eq('user_id',u.id);
+          if(r.error)throw r.error;
+        }else throw rpc.error;
+      }
+      cloudStockRows=[];renderCloudStock();
+      alert('Riwayat stok dan saldo stok sudah di-reset ke 0 Butir.');
+    }catch(err){alert('Gagal menghapus riwayat stok: '+((err&&err.message)||err));}
+  };
 
   // FIX: Print Stok Gudang must use the same live cloudStockRows that are
   // loaded from Supabase. The previous implementation in index.html read
