@@ -294,7 +294,16 @@ body.admin-entry-locked{overflow:hidden}
 <script src="config.js"></script>
 <script src="supabase-client.js"></script>
 <style id="barokah-ui-cleanup-css">.print-demo-watermark,.pr-demo-label{display:none!important}@media print{.print-demo-watermark{display:block!important}.pr-demo-label{display:block!important}}</style>
-</head>
+<!-- Font: Plus Jakarta Sans + Font Awesome (12 Okt 2026, permintaan Tuan) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<style>
+/* Font utama aplikasi: Plus Jakarta Sans */
+body,button,input,select,textarea,.btn{font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif!important}
+</style>
+</head>>
 <body>
 <div id="adminEntryGate">
   <div class="admin-gate-card">
@@ -354,7 +363,7 @@ body.admin-entry-locked{overflow:hidden}
 <header class="top">
   <a class="brand" href="#" onclick="showPage('dashboard');return false;"><span class="logo">BT</span><span>Barokah <b>Telur</b></span></a>
   <nav class="nav">
-<button id="nav-stock" type="button" onclick="showPage('stock')">📦 Stok Gudang</button>
+<button id="nav-stock" type="button" onclick="showPage('stock')"><i class="fa-solid fa-box"></i> Stok Gudang</button>
 
     <button id="nav-dashboard" class="active" onclick="showPage('dashboard')">Dashboard</button>
     <button id="nav-income" onclick="showPage('income')">Uang Masuk</button>
@@ -396,8 +405,8 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
       </div>
 
       <div class="file-actions">
-        <button class="btn primary" id="saveFileBtn" type="button">💾 Simpan File</button>
-        <button class="btn ghost" id="restoreFileBtn" type="button">↩️ Pulihkan File</button>
+        <button class="btn primary" id="saveFileBtn" type="button"><i class="fa-solid fa-floppy-disk"></i> Simpan File</button>
+        <button class="btn ghost" id="restoreFileBtn" type="button"><i class="fa-solid fa-rotate-left"></i> Pulihkan File</button>
       </div>
 
       <div class="quick-actions">
@@ -413,7 +422,7 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
 <div class="stock-quick-card" id="stockQuickCard">
   <div>
     <span class="eyebrow">INVENTORI</span>
-    <h3>📦 Stok Gudang</h3>
+    <h3><i class="fa-solid fa-box"></i> Stok Gudang</h3>
     <p>Pantau stok masuk, stok keluar, dan telur retak/tidak layak.</p>
   </div>
   <button class="btn primary" type="button" onclick="showPage('stock')">Buka Stok Gudang</button>
@@ -421,15 +430,15 @@ font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.15)">
 <div class="stock-quick-card" id="resetDataCard" style="margin-top:12px">
   <div>
     <span class="eyebrow">PENGATURAN</span>
-    <h3>🧹 Reset Data</h3>
+    <h3><i class="fa-solid fa-broom"></i> Reset Data</h3>
     <p>Bersihkan data stok lama di perangkat ini dan muat ulang dari database.</p>
   </div>
-  <button class="btn ghost" id="repairStockBtn" type="button" onclick="resetLegacyStock()">🧹 Reset Data Stok Lama</button>
+  <button class="btn ghost" id="repairStockBtn" type="button" onclick="resetLegacyStock()"><i class="fa-solid fa-broom"></i> Reset Data Stok Lama</button>
   <div id="resetWarning" style="display:none;margin-top:12px;padding:14px;border:1px solid #e6c75a;border-radius:10px;background:#fff8d9;color:#5c4a00">
     <b>⚠️ Peringatan</b>
     <p style="margin:6px 0;font-size:13px">Apakah Anda sudah <b>mencadangkan (backup)</b> data?<br>Reset akan membersihkan data stok lama di perangkat ini, lalu memuat ulang dari database.</p>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-      <button class="btn primary" type="button" onclick="confirmResetLegacyStock()">✅ Sudah, Lanjutkan Reset</button>
+      <button class="btn primary" type="button" onclick="confirmResetLegacyStock()"><i class="fa-solid fa-check"></i> Sudah, Lanjutkan Reset</button>
       <button class="btn ghost" type="button" onclick="cancelResetLegacyStock()">Batal</button>
     </div>
   </div>
@@ -1341,7 +1350,7 @@ BAROKAH TELUR •  • Tahap Revisi
   <div class="page-header">
     <div>
       <span class="eyebrow">INVENTORI</span>
-      <h2>📦 Stok Gudang</h2><div class="stock-print-bar"><button id="printStockBtn" class="btn primary" type="button" onclick="printStockReport()">🖨️ Print Stok Gudang</button></div>
+      <h2><i class="fa-solid fa-box"></i> Stok Gudang</h2><div class="stock-print-bar"><button id="printStockBtn" class="btn primary" type="button" onclick="printStockReport()">🖨️ Print Stok Gudang</button></div>
       <p>Stok Gudang akan berubah otomatis setiap kali Stok Masuk, Stok Keluar, atau Telur Retak dicatat.</p>
     </div>
   </div>
@@ -1444,7 +1453,7 @@ BAROKAH TELUR •  • Tahap Revisi
         <h3>Riwayat Stok Gudang</h3>
         <p class="stock-help">Tanggal · Produk · Jenis · Jumlah · Konversi · Saldo Setelah · Keterangan</p>
       </div>
-      <button class="btn ghost" type="button" onclick="clearStockHistory()">🗑️ Hapus Riwayat</button><small id="stock-history-delete-note" style="display:block;margin-top:6px;color:#8a5a00;font-size:11px">
+      <button class="btn ghost" type="button" onclick="clearStockHistory()"><i class="fa-solid fa-trash"></i> Hapus Riwayat</button><small id="stock-history-delete-note" style="display:block;margin-top:6px;color:#8a5a00;font-size:11px">
 Menghapus riwayat akan mengosongkan dan menghitung ulang saldo stok pada perangkat ini.
 </small>
     </div>
@@ -2156,9 +2165,44 @@ document.addEventListener("DOMContentLoaded",function(){
 
 
 
+<script src="operasional-sync-v70.4.9.js" data-barokah-operational-sync-v7049="1"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <script src="restore-cloud-fix.js"></script>
 
 
+
+<script src="operasional-sync-v70.4.9.js"></script>
 
 <!-- LEVEL 2 (12 Okt 2026): Loading overlay + skeleton + mobile UX -->
 <style>
@@ -2205,7 +2249,5 @@ window.barokahStockSkeleton=function(){
 };
 </script>
 
-
-<script src="operasional-sync-v70.4.9.js" data-barokah-operational-sync-v7049="1"></script>
 </body>
 </html>
