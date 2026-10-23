@@ -2047,6 +2047,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
 
 
+<script src="print-report-fix.js"></script>
 
 
 
@@ -2181,19 +2182,9 @@ document.addEventListener("DOMContentLoaded",function(){
 
 
 
-
-<!-- LEVEL 2 (12 Okt 2026): Loading overlay + skeleton + mobile UX -->
+<!-- Mobile UX (12 Okt 2026): tombol mudah disentuh + tabel halus di HP.
+     Sistem loading overlay/skeleton DIHAPUS 23 Okt 2026 atas permintaan owner. -->
 <style>
-/* Loading overlay global */
-#barokahLoadingOverlay{position:fixed;inset:0;background:rgba(255,255,255,.85);backdrop-filter:blur(2px);z-index:999998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
-#barokahLoadingOverlay.show{display:flex}
-.barokah-spinner{width:44px;height:44px;border:4px solid #d9e8dc;border-top-color:#14532d;border-radius:50%;animation:barokahSpin .8s linear infinite}
-@keyframes barokahSpin{to{transform:rotate(360deg)}}
-#barokahLoadingText{font-size:13px;color:#14532d;font-weight:600}
-/* Skeleton shimmer untuk tabel */
-.barokah-skeleton{padding:8px}
-.barokah-skeleton-row{height:18px;border-radius:6px;background:linear-gradient(90deg,#eef2ee 25%,#dfe7e1 50%,#eef2ee 75%);background-size:200% 100%;animation:barokahShimmer 1.2s infinite;margin:8px 0}
-@keyframes barokahShimmer{to{background-position:-200% 0}}
 /* Mobile: tombol lebih mudah disentuh */
 @media (max-width:640px){
   .btn{min-height:44px;font-size:14px}
@@ -2203,29 +2194,6 @@ document.addEventListener("DOMContentLoaded",function(){
   .table-wrap{-webkit-overflow-scrolling:touch}
 }
 </style>
-<div id="barokahLoadingOverlay" aria-hidden="true">
-  <div class="barokah-spinner"></div>
-  <div id="barokahLoadingText">Memuat data...</div>
-</div>
-<script>
-/* LEVEL 2: helper loading global */
-window.barokahShowLoading=function(msg){
-  var o=document.getElementById('barokahLoadingOverlay');
-  if(!o)return;
-  if(msg)document.getElementById('barokahLoadingText').textContent=msg;
-  o.classList.add('show');
-};
-window.barokahHideLoading=function(){
-  var o=document.getElementById('barokahLoadingOverlay');
-  if(o)o.classList.remove('show');
-};
-/* Skeleton untuk tabel stok saat loading */
-window.barokahStockSkeleton=function(){
-  var box=document.getElementById('stockHistory');
-  if(!box)return;
-  box.innerHTML='<div class="barokah-skeleton"><div class="barokah-skeleton-row"></div><div class="barokah-skeleton-row"></div><div class="barokah-skeleton-row"></div><div class="barokah-skeleton-row"></div></div>';
-};
-</script>
 
 
 
@@ -2236,6 +2204,5 @@ window.barokahStockSkeleton=function(){
 
 <script src="operasional-sync-v70.4.9.js" data-barokah-operational-sync-v7049="1"></script>
 <script src="restore-cloud-fix.js"></script>
-<script src="print-report-fix.js"></script>
 </body>
 </html>

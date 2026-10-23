@@ -92,8 +92,6 @@
   window.__barokahStockCanonicalRenderer=true;
   window.addStockIn=()=>add('Masuk');window.addStockOut=()=>add('Keluar');window.addBadEggs=()=>add('Retak');window.addUnfitEggs=()=>add('Tidak Layak');window.editStockMovement=beginEdit;window.deleteStockMovement=remove;window.clearStockHistory=clear;window.getWarehouseStock=()=>saldo(sharedStockRows);window.renderStock=render;
   const oldSync=window.barokahCloudSync;window.barokahCloudSync=async function(){
-/* LEVEL 2 (12 Okt 2026): tampilkan loading saat sinkronisasi */
-try{if(typeof window.barokahShowLoading==='function')window.barokahShowLoading('Memuat data...');}catch(e){}
 try{
 if(typeof oldSync==='function')await oldSync();await refreshShared();
 /* DIPERBAIKI 12 Okt 2026: paksa render ulang dgn tombol Edit/Hapus.
@@ -101,7 +99,7 @@ if(typeof oldSync==='function')await oldSync();await refreshShared();
    me-skip render bila data tidak berubah (optimasi signature), sehingga
    tombol bisa hilang. render() paksa memastikan tombol selalu ada. */
 try{render();}catch(e){console.error('Shared stock force render:',e);}
-}finally{try{if(typeof window.barokahHideLoading==='function')window.barokahHideLoading();}catch(e){}}};
+}finally{}};
   setTimeout(()=>refreshShared(),1200);
   /* KONSOLIDASI 12 Okt 2026 (Level 1): interval 2 dtk -> 30 dtk.
      Polling tiap 2 dtk menghantam database terus-menerus (boros kuota + baterai HP).
