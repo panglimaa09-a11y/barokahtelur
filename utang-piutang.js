@@ -180,22 +180,35 @@
     if(cancel)cancel.onclick=()=>{bar.style.display='none';};
   };
 
-  // Nomor cicilan berikutnya: hitung berapa pembayaran yang sudah tercatat
-  // untuk piutang/utang ini, lalu +1 (mis. sudah 2x bayar -> "Cicilan 3").
-  // Gagal hitung -> kosong (jangan tebak nomor yang salah).
-  async function nextInstallment(id){
+  // Nomor cicilan berikutnya: baca nomor TERBESAR dari keterangan bayar yang
+  // sudah tersimpan ("Cicilan 3" -> berikutnya "Cicilan 4"). Menghitung jumlah
+  // baris riwayat saja TIDAK cukup: pembayaran lama bisa tidak punya baris
+  // riwayat (jalur lama hanya update paid_amount), jadi hitungan baris akan
+  // salah. Bila tidak ada riwayat tapi sudah ada yang dibayar, kembalikan ''
+  // (jangan tebak); bila belum ada yang dibayar sama sekali -> "Cicilan 1".
+  async function nextInstallment(id, paid){
     try{
-      const {data,error}=await SB().from('debt_payments').select('id').eq('debt_id',id);
+      const {data,error}=await SB().from('debt_payments').select('note').eq('debt_id',id);
       if(error)throw error;
-      return 'Cicilan '+((data||[]).length+1);
+      const list=data||[];
+      if(list.length){
+        let mx=0;
+        list.forEach(function(r){const m=String(r.note||'').match(/cicilan\s*(\d+)/i);if(m)mx=Math.max(mx,parseInt(m[1],10));});
+        if(mx>0)return 'Cicilan '+(mx+1);
+        return 'Cicilan '+(list.length+1);
+      }
+      return (Number(paid||0)>0)?'':'Cicilan 1';
     }catch(e){return '';}
   }
+  // Dipakai juga oleh renderer stabil (debt-stable-render) supaya kedua jalur
+  // Bayar memakai logika nomor cicilan yang sama.
+  window.__barokahNextInstallment=nextInstallment;
 
   async function pay(id){
     const r=rows.find(x=>x.id===id);if(!r)return;
     const left=balance(r);
     if(left<=0){alert('Catatan ini sudah lunas.');return;}
-    const next=await nextInstallment(id);
+    const next=await nextInstallment(id, r.paid_amount);
     window.__barokahDebtPayPrompt({label:r.party_name||'',sisa:left,note:next,onAmount:async(amount,note)=>{
       try{
         const u=await user();
