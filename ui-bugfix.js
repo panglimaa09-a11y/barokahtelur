@@ -41,7 +41,7 @@
     if(window.__stableDebtRendererLoaded)return;
     window.__stableDebtRendererLoaded=true;
     const s=document.createElement('script');
-    s.src='debt-stable-render-v70.8-preview.js?v=2';
+    s.src='debt-stable-render-v70.8-preview.js?v=3';
     s.async=false;
     s.onload=function(){window.dispatchEvent(new Event('barokah:stable-debt-ready'));};
     document.head.appendChild(s);

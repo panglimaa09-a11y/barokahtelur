@@ -40,7 +40,7 @@
 
   function bindDebtMoney(){
     cleanupDebtForm();
-    ['debtTotal','debtPaid','editDebtTotal','editDebtPaid'].forEach(bindMoneyInput);
+    ['debtTotal','debtPaid','debtUnitPrice','editDebtTotal','editDebtPaid','editDebtUnitPrice','sdUnitPrice','sdTotal','sdPaid'].forEach(bindMoneyInput);
     const form=document.getElementById('debtForm');
     if(form&&!form.dataset.rupiahSubmitBound){
       form.dataset.rupiahSubmitBound='1';
@@ -58,6 +58,10 @@
       },true);
     }
   }
+
+  // Dipakai modal edit stable-render (dibuat belakangan, saat tombol Edit diklik)
+  // supaya kolom nominalnya ikut terformat titik ribuan.
+  window.__barokahBindDebtMoney=bindDebtMoney;
 
   async function printNota(id){
     const sb=SB();
