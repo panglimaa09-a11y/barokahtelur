@@ -40,7 +40,7 @@
 
   function bindDebtMoney(){
     cleanupDebtForm();
-    ['debtTotal','debtPaid','debtUnitPrice','editDebtTotal','editDebtPaid','editDebtUnitPrice','sdUnitPrice','sdTotal','sdPaid'].forEach(bindMoneyInput);
+    ['debtTotal','debtPaid','debtUnitPrice','editDebtTotal','editDebtPaid','editDebtUnitPrice','sdUnitPrice','sdTotal','sdPaid','debtPayAmount'].forEach(bindMoneyInput);
     const form=document.getElementById('debtForm');
     if(form&&!form.dataset.rupiahSubmitBound){
       form.dataset.rupiahSubmitBound='1';
