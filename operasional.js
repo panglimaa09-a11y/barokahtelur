@@ -51,6 +51,11 @@
     el.querySelector('#opResetBtn').addEventListener('click',()=>{const c=el.querySelector('#opResetCount');if(c)c.textContent=rows.length;opWarn.style.display='block';opWarn.scrollIntoView({behavior:'smooth',block:'nearest'});});
     el.querySelector('#opResetCancelBtn').addEventListener('click',()=>{opWarn.style.display='none';});
     el.querySelector('#opResetConfirmBtn').addEventListener('click',async()=>{opWarn.style.display='none';try{const u=await user();const {error}=await SB().from('operational_transactions').delete().eq('user_id',u.id);if(error)throw error;rows=[];filter='semua';const fs=el.querySelector('#opFilter');if(fs)fs.value='semua';const ss=el.querySelector('#opSearch');if(ss)ss.value='';el.querySelector('#opForm').reset();render();await dashboard();if(typeof window.toast==='function')window.toast('Semua data operasional sudah dihapus.');else alert('Semua data operasional sudah dihapus.');}catch(e){alert('Gagal menghapus data operasional: '+(e.message||e));}});
+    // Hapus 1 per 1 (15 Nov 2026): tabel dirender ulang tiap 1,5 dtk oleh sync
+    // lain, jadi handler yang ditempel di tiap tombol Hapus sering mati (tombol
+    // diganti tepat saat diklik). Delegasi capture di document ini kebal terhadap
+    // render ulang dan jadi satu-satunya jalur hapus per baris.
+    if(!window.__barokahOpDelDelegated){window.__barokahOpDelDelegated=true;document.addEventListener('click',async e=>{const b=e.target&&e.target.closest?e.target.closest('[data-op-del],[data-op-del-v707]'):null;if(!b)return;e.preventDefault();e.stopPropagation();const id=b.dataset.opDel||b.dataset.opDelV707||'';if(!id)return;if(!confirm('Hapus transaksi operasional ini?'))return;try{const u=await user();const {error}=await SB().from('operational_transactions').delete().eq('id',id).eq('user_id',u.id);if(error)throw error;await load();await dashboard();}catch(err){alert('Gagal menghapus: '+(err.message||err));}},true);}
     el.querySelector('#opPrint').addEventListener('click',printList);
   }
 
