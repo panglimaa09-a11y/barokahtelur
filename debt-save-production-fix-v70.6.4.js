@@ -46,9 +46,10 @@
 
     const kind=document.getElementById('debtKind')?.value||'piutang';
     const party=getText(['debtParty','debtName']);
-    const total=parseMoney(getText(['debtTotal']));
-    const paid=parseMoney(getText(['debtPaid']))||0;
     const quantity=Number(getText(['debtQuantity','debtQty'])||1);
+    const unitPrice=parseMoney(getText(['debtUnitPrice']));
+    const total=unitPrice>0?Math.round(unitPrice*quantity):parseMoney(getText(['debtTotal']));
+    const paid=parseMoney(getText(['debtPaid']))||0;
     const unit=getText(['debtUnit'])||'Paket';
 
     const problems=[];
@@ -102,6 +103,10 @@
     if(q2) q2.value='1';
     const un=document.getElementById('debtUnit');
     if(un) un.value='Paket';
+    const up=document.getElementById('debtUnitPrice');
+    if(up) up.value='';
+    const tt=document.getElementById('debtTotal');
+    if(tt) tt.value='';
 
     document.dispatchEvent(new CustomEvent('barokah:debt-changed'));
     document.getElementById('debtNavBtn')?.click();

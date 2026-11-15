@@ -71,14 +71,15 @@
       const u=await getUser();
       const kind=document.getElementById('debtKind')?.value||'piutang';
       const party=(document.getElementById('debtParty')?.value||document.getElementById('debtName')?.value||'').trim();
-      const total=numberValue(document.getElementById('debtTotal')?.value);
-      const paid=numberValue(document.getElementById('debtPaid')?.value||0);
       const quantity=Number(document.getElementById('debtQuantity')?.value||document.getElementById('debtQty')?.value||1);
+      const unitPrice=numberValue(document.getElementById('debtUnitPrice')?.value);
+      const total=unitPrice>0?Math.round(unitPrice*quantity):numberValue(document.getElementById('debtTotal')?.value);
+      const paid=numberValue(document.getElementById('debtPaid')?.value||0);
       const unit=(document.getElementById('debtUnit')?.value||'Paket').trim()||'Paket';
       if(!party||total<=0||!Number.isFinite(total)||paid<0||paid>total||!Number.isFinite(paid)||!Number.isFinite(quantity)||quantity<=0){showSaveError('Periksa nama, jumlah, total, dan pembayaran.');return;}
       const payload={user_id:u.id,kind,party_type:kind==='piutang'?'pelanggan':'supplier',party_name:party,phone:document.getElementById('debtPhone')?.value.trim()||'',reference_no:document.getElementById('debtRef')?.value.trim()||'',debt_date:document.getElementById('debtDate')?.value||today(),due_date:document.getElementById('debtDue')?.value||null,total_amount:total,paid_amount:paid,quantity,unit,note:document.getElementById('debtNote')?.value.trim()||''};
       await insertDebt(payload);
-      const f=document.getElementById('debtForm');if(f)f.reset();const d=document.getElementById('debtDate');if(d)d.value=today();const q=document.getElementById('debtQuantity');if(q)q.value='1';const q2=document.getElementById('debtQty');if(q2)q2.value='1';const un=document.getElementById('debtUnit');if(un)un.value='Paket';
+      const f=document.getElementById('debtForm');if(f)f.reset();const d=document.getElementById('debtDate');if(d)d.value=today();const q=document.getElementById('debtQuantity');if(q)q.value='1';const q2=document.getElementById('debtQty');if(q2)q2.value='1';const un=document.getElementById('debtUnit');if(un)un.value='Paket';const up=document.getElementById('debtUnitPrice');if(up)up.value='';const tt=document.getElementById('debtTotal');if(tt)tt.value='';
       document.getElementById('debtSaveError')?.remove();
       document.dispatchEvent(new CustomEvent('barokah:debt-changed'));
       document.getElementById('debtNavBtn')?.click();

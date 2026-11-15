@@ -15,7 +15,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('operasional.js?v=70.4.2','data-barokah-operasional-preview');
     load('financial-b-dashboard-preview.js?v=2','data-barokah-financial-preview-b');
     load('financial-c-dashboard-preview.js?v=70.4.1','data-barokah-financial-preview-c');
-    load('utang-piutang-satuan-v70.4.3.js?v=1','data-barokah-debt-unit-preview');
+    load('utang-piutang-satuan-v70.4.3.js?v=2','data-barokah-debt-unit-preview');
     load('edit-operasional-utang-v70.4.4.js?v=1','data-barokah-edit-44');
     load('sidebar-v70.4.5.js?v=3','data-barokah-sidebar-v7045');
     load('sidebar-operasional-fix-v70.4.5.js?v=3','data-barokah-sidebar-operasional-fix');
@@ -30,7 +30,7 @@ window.BAROKAH_SUPABASE_CONFIG = {
     load('debt-dashboard-sync-v70.6.2.js?v=1','data-barokah-debt-dashboard-sync-v7062');
     load('debt-sync-events-v70.6.2.js?v=1','data-barokah-debt-sync-events-v7062');
     load('debt-history-sync-v70.6.3.js?v=1','data-barokah-debt-history-sync-v7063');
-    load('debt-save-production-fix-v70.6.4.js?v=1','data-barokah-debt-save-production-fix-v7064');
+    load('debt-save-production-fix-v70.6.4.js?v=2','data-barokah-debt-save-production-fix-v7064');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
