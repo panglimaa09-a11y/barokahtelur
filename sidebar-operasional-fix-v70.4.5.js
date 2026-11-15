@@ -44,7 +44,7 @@
       }
       if(document.getElementById('page-operational')){openPage();return;}
       var s=document.createElement('script');
-      s.src='operasional.js?v=70.4.8-route-fix';
+      s.src='operasional.js?v=70.4.9-route-fix';
       s.async=false;
       s.onload=function(){setTimeout(openPage,150)};
       s.onerror=function(){alert('Modul Operasional gagal dimuat. Periksa file operasional.js.');};
