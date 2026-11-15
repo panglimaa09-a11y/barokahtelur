@@ -27,11 +27,9 @@
 
   function installForm(){
     const form=document.getElementById('debtForm'); if(!form||form.dataset.unitInstalled)return false;
-    const note=document.getElementById('debtNote')?.closest('.debt-field');
-    const grid=form.querySelector('.debt-form'); if(!grid)return false;
-    const wrap=document.createElement('div');wrap.className='debt-unit-grid';
-    wrap.innerHTML='<div class="debt-field"><label>Jumlah</label><input id="debtQuantity" type="number" min="0.001" step="0.001" value="1" required placeholder="Contoh: 10"></div><div class="debt-field"><label>Satuan</label><input id="debtUnit" list="debtUnitList" type="text" value="Paket" required placeholder="Kg / Rak / Papan / Butir / custom"></div>';
-    if(note)grid.insertBefore(wrap,note);else grid.appendChild(wrap);
+    // JANGAN injeksi field Jumlah/Satuan kedua: form sudah punya debtQty/debtUnit.
+    // Injeksi lama bikin DUA field "Jumlah" (race dengan cleanupDebtForm di nota.js)
+    // sehingga save bisa membaca field yang tidak diketik user.
     if(!document.getElementById('debtUnitList')){
       const dl=document.createElement('datalist');dl.id='debtUnitList';['Butir','Kg','Rak','Papan','Ikat','Peti','Tray','Paket'].forEach(x=>{const o=document.createElement('option');o.value=x;dl.appendChild(o)});document.body.appendChild(dl);
     }

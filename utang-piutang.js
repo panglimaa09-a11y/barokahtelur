@@ -172,19 +172,31 @@
   // Dipakai juga oleh debt-stable-render-v70.8-preview.js.
   window.__barokahDebtPayPrompt=function(opts){
     const bar=document.getElementById('debtPayBar'),txt=document.getElementById('debtPayText'),inp=document.getElementById('debtPayAmount'),noteEl=document.getElementById('debtPayNote');
-    if(!bar||!txt||!inp){const v=prompt('Tambah pembayaran (Rp):',String(opts.sisa));if(v==null)return;opts.onAmount(parseMoney(v),'');return;}
+    if(!bar||!txt||!inp){const v=prompt('Tambah pembayaran (Rp):',String(opts.sisa));if(v==null)return;opts.onAmount(parseMoney(v),opts.note||'');return;}
     txt.textContent='Tambah Pembayaran — '+opts.label+' • Sisa '+fmt(opts.sisa);
-    inp.value='';if(noteEl)noteEl.value='';bar.style.display='block';inp.focus();
+    inp.value='';if(noteEl)noteEl.value=opts.note||'';bar.style.display='block';inp.focus();
     const save=document.getElementById('debtPaySaveBtn'),cancel=document.getElementById('debtPayCancelBtn');
     if(save)save.onclick=()=>{const v=parseMoney(inp.value);if(!(v>0)){alert('Isi jumlah pembayaran.');return;}if(v>opts.sisa){alert('Pembayaran melebihi sisa ('+fmt(opts.sisa)+').');return;}bar.style.display='none';opts.onAmount(v,noteEl?noteEl.value.trim():'');};
     if(cancel)cancel.onclick=()=>{bar.style.display='none';};
   };
 
+  // Nomor cicilan berikutnya: hitung berapa pembayaran yang sudah tercatat
+  // untuk piutang/utang ini, lalu +1 (mis. sudah 2x bayar -> "Cicilan 3").
+  // Gagal hitung -> kosong (jangan tebak nomor yang salah).
+  async function nextInstallment(id){
+    try{
+      const {data,error}=await SB().from('debt_payments').select('id').eq('debt_id',id);
+      if(error)throw error;
+      return 'Cicilan '+((data||[]).length+1);
+    }catch(e){return '';}
+  }
+
   async function pay(id){
     const r=rows.find(x=>x.id===id);if(!r)return;
     const left=balance(r);
     if(left<=0){alert('Catatan ini sudah lunas.');return;}
-    window.__barokahDebtPayPrompt({label:r.party_name||'',sisa:left,onAmount:async(amount,note)=>{
+    const next=await nextInstallment(id);
+    window.__barokahDebtPayPrompt({label:r.party_name||'',sisa:left,note:next,onAmount:async(amount,note)=>{
       try{
         const u=await user();
         const {data:p,error:pe}=await SB().from('debt_payments').insert({debt_id:id,user_id:u.id,payment_date:today(),amount,note}).select('*').single();
