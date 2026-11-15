@@ -91,7 +91,7 @@
   async function decorateTable(){
     const table=document.querySelector('#debtTable table');if(!table)return;
     const thead=table.querySelector('thead tr');if(!thead||thead.querySelector('[data-unit-head]'))return;
-    const th=document.createElement('th');th.dataset.unitHead='1';th.textContent='Jumlah / Satuan';thead.insertBefore(th,thead.children[3]||null);
+    const th=document.createElement('th');th.dataset.unitHead='1';th.textContent='QTY';thead.insertBefore(th,thead.children[3]||null);
     try{
       const u=await getUser();
       const {data,error}=await SB().from('debts_receivables').select('party_name,debt_date,reference_no,quantity,unit').eq('user_id',u.id);
