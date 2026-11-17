@@ -25,7 +25,7 @@ function install(){
  const opPrint=document.getElementById('opPrint');
  if(opPrint && opPrint.dataset.v707PrintInstalled!=='1'){
    const fresh=opPrint.cloneNode(true);fresh.id='opPrint';fresh.dataset.v707PrintInstalled='1';fresh.removeAttribute('onclick');
-   fresh.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();printOperationalAll()});
+   fresh.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var c=document.getElementById('opPrintChoice');if(c){c.style.display='block';if(c.scrollIntoView)c.scrollIntoView({behavior:'smooth',block:'nearest'});}else if(window.BarokahOperationalSync&&window.BarokahOperationalSync.printAll){window.BarokahOperationalSync.printAll('semua');}else{printOperationalAll();}});
    opPrint.parentNode.replaceChild(fresh,opPrint);
  }
 }

@@ -85,7 +85,7 @@
     if(document.getElementById('barokah-v707-script'))return;
     var s=document.createElement('script');
     s.id='barokah-v707-script';
-    s.src='barokah-bugfix-v70.7.js';
+    s.src='barokah-bugfix-v70.7.js?v=1';
     s.defer=false;
     document.head.appendChild(s);
   }
