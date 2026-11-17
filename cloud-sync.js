@@ -101,10 +101,13 @@
         return '<tr><td>'+dateText(r.created_at)+'</td><td>'+esc(r.product||'Telur Ayam Ras')+'</td><td>'+esc(r.movement_type||'')+'</td><td>'+qty+'</td><td>'+conv+'</td><td><b>'+fmt(after)+' Butir</b></td><td>'+esc(r.note||'-')+'</td></tr>';
       }).join('');
       const html='<!doctype html><html><head><meta charset="utf-8"><title>Stok Gudang - Barokah Telur</title><style>@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Arial,sans-serif;color:#111;font-size:9px;margin:0}.head{text-align:center;border-bottom:2px solid #14532d;padding-bottom:10px;margin-bottom:12px}.title{font-size:20px;font-weight:900;color:#14532d}.sub{font-size:10px;color:#666;margin-top:2px}.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.card{border:1px solid #ddd;border-radius:7px;padding:8px}.label{font-size:8px;color:#666}.value{font-size:15px;font-weight:900;color:#14532d;margin-top:3px}h2{font-size:12px;margin:12px 0 6px;border-left:4px solid #14532d;padding-left:6px}table{width:100%;border-collapse:collapse;font-size:8px}th{background:#14532d;color:#fff;padding:5px;text-align:left}td{border:1px solid #ddd;padding:4px;vertical-align:top}.foot{text-align:center;border-top:1px dashed #777;margin-top:10px;padding-top:6px;color:#666;font-size:8px}</style></head><body><div class="head"><div class="title">BAROKAH TELUR</div><div class="sub">LAPORAN STOK GUDANG</div><div class="sub">'+esc(new Date().toLocaleString('id-ID'))+'</div></div><div class="summary"><div class="card"><div class="label">STOK GUDANG SAAT INI</div><div class="value">'+fmt(saldoNow)+' Butir</div></div><div class="card"><div class="label">RIWAYAT PERUBAHAN</div><div class="value">'+rows.length+' data</div></div></div><h2>Riwayat Stok Gudang</h2><table><thead><tr><th>Tanggal</th><th>Produk</th><th>Jenis</th><th>Jumlah</th><th>Konversi</th><th>Saldo Setelah</th><th>Keterangan</th></tr></thead><tbody>'+(rowsHtml||'<tr><td colspan="7" style="text-align:center">Belum ada riwayat stok.</td></tr>')+'</tbody></table><div class="foot">Data diambil langsung dari database online saat tombol Print Stok Gudang ditekan.</div></body></html>';
-      const w=window.open('','_blank');
-      if(!w){alert('Izinkan pop-up untuk membuka Print Stok Gudang.');return;}
-      w.document.open();w.document.write(html);w.document.close();
-      setTimeout(()=>{w.focus();w.print();},500);
+      // Print via iframe tersembunyi (pola printOperational), BUKAN window.open:
+      // popup diblokir browser HP sehingga Print Stok Gudang sering tidak muncul.
+      const frame=document.createElement('iframe');
+      frame.style.cssText='position:fixed;width:1px;height:1px;right:0;bottom:0;border:0;opacity:0';
+      document.body.appendChild(frame);
+      frame.onload=function(){setTimeout(function(){try{frame.contentWindow.focus();frame.contentWindow.print();}catch(e){alert('Print gagal: '+(e.message||e));}setTimeout(function(){frame.remove();},1200);},200);};
+      frame.srcdoc=html;
     }catch(err){console.error('Print Stok Gudang gagal:',err);alert('Print Stok Gudang gagal: '+(err.message||err));}
   };
 
